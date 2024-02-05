@@ -1,0 +1,873 @@
+---
+title: 'Minería de datos: PEC1'
+author: "Autor: Eduardo Mora González"
+date: "octubre 2021"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: 75.584-PEC-header.html
+  word_document: default
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+****
+# Introducción
+****
+## Presentación
+Esta prueba de evaluación continuada cubre los módulos "El proceso de minería de datos" y "Preprocesado de los datos y gestión de características" del programa de la asignatura.
+
+## Objetivos
+* Asimilar correctamente los módulos citados.
+* Qué es y que no es MD.
+* Ciclo de vida de los proyectos de MD.
+* Diferentes tipologías de MD.
+* Conocer las técnicas propias de una fase de conocimiento, preparación de datos y objetivos a lograr.
+
+## Descripción de la PEC a realizar
+La prueba está estructurada en 1 ejercicio teórico/práctico y 1 ejercicio práctico que pide que se desarrolle la fase de conocimiento y preparación con un juego de datos.
+Se tienen que responderse todos los ejercicios para poder superar la PEC.
+La PEC está pensada para resolverla en el entorno Markdown con RStudio con R como lenguaje preferido. Se recomienda hacerlo así. Si tenéis las competencias para hacerlo en Python no hay ningún problema. Podéis hacerlo. Simplemente sustituis los chunks de R por chunks en Python. 
+
+## Recursos
+Para realizar esta práctica recomendamos como punto de partida la lectura de los siguientes documentos:
+
+* Los módulos "El proceso de minería de datos" y "Preprocesado de los datos y gestión de características" del programa de la asignatura.
+* Ciclo de vida de un proyecto de minería de datos: https://es.wikipedia.org/wiki/cross_industry_standard_process_for_data_mining#Fases_principales
+* Al apartado del enunciado de la actividad disponéis de unos materiales de ggplot2
+* El aula laboratorio de R para resolver dudas o problemas.
+* RStudio Cheat Sheet: Disponible en el aula Laboratorio de Minería de datos.
+* R Base Cheat Sheet: Disponible en el aula Laboratorio de Minería de datos.
+
+
+## Formato y fecha de entrega
+El formato de entrega es: **usernameestudiante-PEC1.html (pdf o word) y rmd**. 
+Fecha de Entrega: 27/10/2021.
+Se tiene que librar la PEC en el buzón de entregas del aula.
+
+
+## Nota: Propiedad intelectual
+
+A menudo es inevitable, al producir una obra multimedia, hacer uso de recursos creados por terceras personas. Es por lo tanto comprensible hacerlo en el marco de una práctica de los estudios de Informática, Multimedia y Telecomunicación de la UOC, siempre que esto se documente claramente y no suponga plagio en la práctica.
+
+Por lo tanto, al presentar una práctica que haga uso de recursos ajenos, se tiene que presentar junto con ella un documento en que se detallen todos ellos, especificando el nombre de cada recurso, su autor, el lugar donde se obtuvo y su estatus legal: si la obra está protegida por el copyright o se acoge a alguna otra licencia de uso (Creative Commons, licencia GNU, GPL ...).
+El estudiante tendrá que asegurarse que la licencia no impide específicamente su uso en el marco de la práctica. En caso de no encontrar la información correspondiente tendrá que asumir que la obra está protegida por copyright.
+
+Habréis, además, adjuntar los ficheros originales cuando las obras utilizadas sean digitales, y su código fuente si corresponde.
+
+****
+# Ejemplo de solución mínimo del ejercicio 2
+****
+****
+## Objetivos
+****
+Como muestra, trabajaremos con el juego de datos "Titanic.csv" que recoge datos sobre el famoso crucero.
+
+Las actividades que llevaremos a cabo en esta práctica se hacen en las fases iniciales de un proyecto de minería de datos. Tienen como objetivo obtener un dominio de los datos con las que construiremos el modelo de minería. Tenemos que conocer profundamente los datos tanto en su formato como contenido. Tareas típicas pueden ser la selección de características o variables, la preparación del juego de datos para posteriormente ser consumido por un algoritmo e intentar extraer el máximo conocimiento posible de los datos. Desarrollaremos un subconjunto de tareas mínimas y de ejemplo. Podemos incluir muchas más y mucho más profundas, como hemos visto en el material docente.
+
+
+
+## Procesos iniciales con los datos
+
+Primer contacto con el juego de datos.
+
+Instalamos y cargamos las librerías ggplot2 y dplry.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# https://cran.r-project.org/web/packages/ggplot2/index.html
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+# https://cran.r-project.org/web/packages/dplyr/index.html
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+```
+
+Cargamos el fichero de datos.
+
+```{r}
+totalData <- read.csv('titanic.csv',stringsAsFactors = FALSE)
+filas=dim(totalData)[1]
+```
+
+Guardamos los datos filtrados por tripulación para hacer estudios posteriores.
+
+```{r}
+totalData_crew=subset(totalData, totalData$class=="engineering crew")
+```
+
+Verificamos la estructura del juego de datos principal.
+
+```{r}
+str(totalData)
+```
+
+Vemos que tenemos 2207 registros que se corresponden a los viajeros y tripulación del Titánic y 11 variables que los caracterizan.
+
+Revisamos la descripción de las variables contenidas al fichero y si los tipos de variable se corresponde al que hemos cargado:
+
+**name**
+    string with the name of the passenger.
+    
+**gender**
+    factor with levels male and female.
+    
+**age**
+    numeric value with the persons age on the day of the sinking. The age of babies (under 12 months) is given as a fraction of one year (1/month).
+    
+**class**
+    factor specifying the class for passengers or the type of service aboard for crew members.
+    
+**embarked**
+    factor with the persons place of of embarkment.
+    
+**country**
+    factor with the persons home country.
+    
+**ticketno**
+    numeric value specifying the persons ticket number (NA for crew members).
+    
+**fare**
+    numeric value with the ticket price (NA for crew members, musicians and employees of the shipyard company).
+    
+**sibsp**
+    ordered factor specifying the number if siblings/spouses aboard; adopted from Vanderbild data set.
+    
+**parch**
+    an ordered factor specifying the number of parents/children aboard; adopted from Vanderbild data set.
+    
+**survived**
+    a factor with two levels (no and yes) specifying whether the person has survived the sinking.
+    
+Vamos ahora a sacar estadísticas básicas y después trabajamos los atributos con valores vacíos.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+summary(totalData)
+```
+
+
+Estadísticas de valores vacíos.
+
+```{r}
+colSums(is.na(totalData))
+colSums(totalData=="")
+```
+
+Asignamos valor "Desconocido" para los valores vacíos de la variable "country".
+
+```{r}
+totalData$country[is.na(totalData$country)] <- "Desconocido"
+```
+
+Asignamos la media para valores vacíos de la variable "age".
+
+```{r}
+totalData$age[is.na(totalData$age)] <- mean(totalData$age,na.rm=T)
+```
+
+
+De la información mostrada destacamos que el pasajero más joven tenía 6 meses y el más grande 74 años. La media de edad la tenían en 30 años. También podemos ver 891 sin billete. Revisaremos si se corresponde a la tripulación. También podemos observar el que se pagó por el billete. En este caso se entienden las discrepancias en la fiabilidad de este dato. Parece que los pasajeros que embarcaron a Southampton hacían transbordo de un barco que tenía la tripulación en huelga y por eso no tuvieron que pagar lo que explicaría la diferencia. Recordemos que la tripulación no pagaba. Sibsp y parch también muestran datos interesantes el viajero con quien más familiar viajaba eran 8 hermanos o mujer y 9 hijos o paro/madre.
+
+Si observamos los NA (valores nulos) vemos que los datos están bastante bien. Decidimos sustituir el valor NA de country por Desconocido por una mayor legibilidad. También proponemos sustituir los NA de age por la media a pesar de que realmente no hace falta.
+
+Es curios como los valores NA de sibsp y parch nos permite deducir que viajaban muchas familias. De hecho a simple vista, restante la tripulación la gente que viajaba sola era mínima. Este dato la podríamos contrastar también. Sería interesante relacionar la mortalidad del accidente con el tamaño de las familias que viajaban.
+
+Ahora añadiremos un campo nuevo a los datos. Este campos contendrá el valor de la edad discretitzada con un método simple de intervalos de igual amplitud.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+summary(totalData[,"age"])
+```
+
+Discretizamos con intervalos.
+
+```{r}
+totalData["segmento_edad"] <- cut(totalData$age, breaks = c(0,10,20,30,40,50,60,70,100), labels = c("0-9", "10-19", "20-29", "30-39","40-49","50-59","60-69","70-79"))
+```
+
+Observamos los datos discretizados.
+
+```{r}
+head(totalData)
+```
+
+Vemos como se agrupaban por edad.
+
+```{r}
+plot(totalData$segmento_edad,main="Número de pasajeros por grupos de edad",xlab="Edad", ylab="Cantidad",col = "ivory")
+```
+
+Ahora repetimos por el proceso pero solo por el subconjunto de tripulación filtrado antes.
+
+```{r}
+totalData_crew["segmento_edad"] <- cut(totalData_crew$age, breaks = c(0,10,20,30,40,50,60,70,100), labels = c("0-9", "10-19", "20-29", "30-39","40-49","50-59","60-69","70-79"))
+plot(totalData_crew$segmento_edad,main="Número de tripulantes por grupos de edad",xlab="Edad", ylab="Cantidad",col = "ivory")
+```
+
+De la discretizaón de la edad observamos que realmente la gente que viajaba era muy joven. El segmento más grande era de 20 a 29 años. También vemos de la juventud de la tripulación.
+
+
+Como alternativa a la discretización realizada discretizaremos ahora edad con kmeans.
+
+```{r}
+# https://cran.r-project.org/web/packages/arules/index.html
+if (!require('arules')) install.packages('arules'); library('arules')
+set.seed(2)
+table(discretize(totalData$age, "cluster" ))
+hist(totalData$age, main="Número de pasajeros por grupos de edad con kmeans",xlab="Edad", ylab="Cantidad",col = "ivory")
+abline(v=discretize(totalData$age, method="cluster", onlycuts=TRUE),col="red")
+```
+
+Podemos observar que sin pasar ningún argumento y que el algoritmo  escoja el conjunto de particiones se muestran tres clústeres que agrupan las edades en las franjas mencionadas.
+Podemos asignar el propio clúster como una variable más al dataset para trabajar después.
+
+
+```{r}
+totalData$edad_KM <- (discretize(totalData$age, "cluster" ))
+head(totalData)
+```
+
+Ahora normalizaremos la edad de los pasajeros por el máximo añadiendo un nuevo valor a los datos que contendrá el valor.
+
+```{r}
+totalData$age_NM <- (totalData$age/max(totalData[,"age"]))
+head(totalData$age_NM)
+```
+
+Supongamos que queremos normalizar por la diferencia para ubicar entre 0 y 1 la variable edad del pasajero dado que el algoritmo de minería que utilizaremos así lo requiere. observamos la distribución de la variable original y las tres generadas
+
+```{r}
+totalData$age_ND = (totalData$age-min(totalData$age))/(max(totalData$age)-min(totalData$age))
+
+max(totalData$age)
+min(totalData$age)
+hist(totalData$age,xlab="Edad", col="ivory",ylab="Cantidad", main="Número de pasajeros por grupos de edad")
+hist(totalData$age_NM,xlab="Edad normalizada por el máximo", ylab="Cantidad",col="ivory", main="Número de pasajeros por grupos de edad")
+hist(totalData$age_ND,xlab="Edad normalizada por la diferencia",ylab="Cantidad", col="ivory", main="Número de pasajeros por grupos de edad")
+```
+
+## Procesos de análisis visuales del juego de datos
+
+Nos proponemos analizar las relaciones entre las diferentes variables del juego de datos para ver si se relacionan y como.
+
+Visualizamos la relación entre las variables "gender" y "survived":
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data=totalData[1:filas,],aes(x=gender,fill=survived))+geom_bar()+ggtitle("Relación entre las variables gender y survived")
+```
+
+
+Otro punto de vista. Survived como función de Embarked:
+
+```{r}
+ggplot(data=totalData[1:filas,],aes(x=embarked,fill=survived))+geom_bar(position="fill")+ylab("Frequència")+ggtitle("Survived como función de Embarked")
+```
+
+En la primera gráfica podemos observar fácilmente la cantidad de mujeres que viajaban respecto hombres y observar los que no sobrevivieron. Numéricamente el número de hombres y mujeres supervivientes es similar.
+
+En la segunda gráfica de forma porcentual observamos los puertos de embarque y los porcentajes de supervivencia en función del puerto. Se podría trabajar el puerto C (Cherburgo) para ver de explicar la diferencia en los datos. Quizás porcentualmente embarcaron más mujeres o niños... ¿O gente de primera clase?
+
+Obtenemos ahora una matriz de porcentajes de frecuencia.
+Vemos, por ejemplo que la probabilidad de sobrevivir si se embarcó en "C" es de un 56.45%
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+t<-table(totalData[1:filas,]$embarked,totalData[1:filas,]$survived)
+for (i in 1:dim(t)[1]){
+    t[i,]<-t[i,]/sum(t[i,])*100
+}
+t
+```
+
+Veamos ahora como en un mismo gráfico de frecuencias podemos trabajar con 3 variables: Embarked, Survived y class.
+
+Mostramos el gráfico de embarcados por Pclass:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data = totalData[1:filas,],aes(x=embarked,fill=survived))+geom_bar(position="fill")+facet_wrap(~class)+ggtitle("Pasajeros por clase, puerto de origen y relación con survived")
+```
+
+Aquí ya podemos extraer mucha información. Como propuesta de mejora se podría hacer un gráfico similar trabajando solo la clase. Habría que unificar toda la tripulación a una única categoría.
+
+Comparamos ahora dos gráficos de frecuencias: Survived-SibSp y Survived-Parch
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data = totalData[1:filas,],aes(x=sibsp,fill=survived))+geom_bar()+ggtitle("Sobrevivir en función de tener a bordo cónyuges y/o hermanos")
+ggplot(data = totalData[1:filas,],aes(x=parch,fill=survived))+geom_bar()+ggtitle("Sobrevivir en función de tener a bordo padres y/o hijos")
+```
+
+Vemos como la forma de estos dos gráficos es similar. Este hecho nos puede indicar presencia de correlaciones altas. Hecho previsible en función de la descripción de las variables.
+
+Veamos un ejemplo de construcción de una variable nueva: Tamaño de familia
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+totalData$FamilySize <- totalData$sibsp + totalData$parch +1;
+totalData1<-totalData[1:filas,]
+ggplot(data = totalData1[!is.na(totalData[1:filas,]$FamilySize),],aes(x=FamilySize,fill=survived))+geom_histogram(binwidth =1,position="fill")+ylab("Frecuencia")+ggtitle("Sobrevivir en función del número de familiares a bordo")
+```
+Se confirma el hecho de que los pasajeros viajaban mayoritariamente en familia. No podemos afirmar que el tamaño de la familia tuviera nada que ver con la posibilidad de sobrevivir pues nos tememos que estadísticamente el hecho de haber más familias de alrededor de cuatro miembros debería de ser habitual. Es un punto de partida para investigar más.
+
+Veamos ahora dos gráficos que nos comparan los atributos Age y Survived.
+Observamos como el parámetro position="fill" nos da la proporción acumulada de un atributo dentro de otro
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ggplot(data = totalData1[!(is.na(totalData[1:filas,]$age)),],aes(x=age,fill=survived))+geom_histogram(binwidth =3)+ggtitle("Sobrevivir en función de edad")
+ggplot(data = totalData1[!is.na(totalData[1:filas,]$age),],aes(x=age,fill=survived))+geom_histogram(binwidth = 3,position="fill")+ylab("Frecuencia")+ggtitle("Sobrevivir en función de edad")
+```
+
+
+Observamos como el parámetro position="hijo" nos da la proporción acumulada de un atributo dentro de otro. Parece que los niños tuvieron más posibilidad de salvarse.
+
+Vamos a probar si hay una correlación entre la edad del pasajero y el que pagó por el viaje
+
+```{R}
+# https://cran.r-project.org/web/packages/tidyverse/index.html
+if (!require('tidyverse')) install.packages('tidyverse'); library('tidyverse')
+cor.test(x = totalData$age, y = totalData$fare, method = "pearson")
+ggplot(data = totalData, aes(x = age, y = log(fare))) + geom_point(color = "gray30") + geom_smooth(color = "firebrick") + theme_bw() +ggtitle("Correlación entre precio billete y edad")
+```
+
+
+Cómo podemos observar no parece haber correlación lineal entre la edad del pasajero y el precio del billete. El diagrama de dispersión tampoco apunta a ningún tipo de relación no lineal evidente.
+
+
+## Conclusiones finales
+
+Los datos tienen una calidad correcta y están mayoritariamente bien informados. Disponen de una variable de clase "survived" que los hace aptos para un clasificador.
+A parte de la mayor supervivencia de mujeres y niños y de pasajeros de primera clase podemos observar la juventud de los pasajeros y la tripulación. Se observa también una gran cantidad de personas que viajaban en familia.
+
+
+
+****
+# Ejercicios
+****
+
+## Ejercicio 1:
+
+Propon un proyecto completo de minería de datos. La organización de la respuesta tiene que coincidir con las fases típicas del ciclo de vida de un proyecto de minería de datos. *No hay que hacer las tareas de cada fase*. Para cada fase indica cuál es el objetivo de la fase y el producto que se obtendrá. Utiliza ejemplos de qué y como podrían ser las tareas. Si hay alguna característica que hace diferente el ciclo de vida de un proyecto de minería respecto a otros proyectos indícalo.
+
+
+> Escribe aquí la respuesta a la pregunta
+
+
+**Definición de la tarea de minería de datos**
+
+Actualmente estoy trabajando en una empresa eléctrica, exactamente en la parte de distribución. Una de las preocupaciones principales es mantener el suministro de energía eléctrica de una manera constante. Por eso un posible proyecto de minera de datos puede ser la predicción de los fallos en las líneas eléctricas siguiendo los patrones de consumo. Un ejemplo practico para entender el fin del proyecto podría ser lo siguiente.
+
+*Ejemplo*
+
+Tenemos una línea de distribución en la que se encuentra 3 transformador de media a baja tensión y un contador del flujo de la electricidad en cada uno de los transformadores.
+El flujo de electricidad que corre por dicha red es de ~100 Vm , y tras pasar por los contadores de los transformadores esta se reduce a ~30 Vm metro en cada uno.
+
+Con el paso del tiempo, el contador de unos de los transformadores empieza a contar una variación intermitente en el flujo de corriente (~25 Vm) que a simple vista puede no significar nada, pero con el paso de las semanas se produce una avería en el transformador que implique un corte en la línea eléctrica.
+
+El modelo de predicción nos puede permitir detectar estos patrones para darnos una señal de alarma de que algo esta pasando por ciertas variaciones en el flujo de corriente.
+
+**Origen de los datos**
+
+Para obtener los datos y que puedan ser analizados se debería obtener de dos conjuntos de datos distintos: el primero que nos proporcione los datos relativos al consumo durante un periodo de tiempo, y el segundo conjunto que nos proporcione todos los datos relativos a las averías.
+
+
+Los dos conjuntos de datos son necesarios para contrastar la información, y comprobar que variaciones o parámetros se han ido alterando y con qué periodo de tiempo se han producido estas variaciones antes de que se produjeran una avería.
+
+Una aproximación de los atributos que podrían tener estos conjuntos de datos es:
+-	Relativo al consumo de la Red: fecha, zona, flujo de corriente, versión de los equipos, parámetros relativos a la corriente...
+-	Relativo a las averías de la Red: Nombre de la incidencia, fecha, zona, tiempo de resolución, coste...
+
+
+**Preparación de los datos**
+
+La preparación de los datos es una etapa fundamental. Esto se debe a que se quiere obtener un modelo predictivo, lo más lógico (a mi entender) seria elegir las zonas con mayor calidad de datos y luego hacer una extrapolación al resto de las zonas.
+
+*Limpieza de los datos*
+
+Como he comentado antes, solamente nos interesaría tener los datos sobre unas zonas concretas, para ello se tomaría los datos de la o las zonas en donde exista un menor número de datos incompletos, redundantes o inconsistentes.
+
+Otra cosa para tener en cuenta es que debemos coger los datos a partir del ultimo cambio en la infraestructura, es decir si tenemos un registro de 100 datos, y solamente el 30% son obtenidos después de un cambio considerable en la manera de la distribución de la electricidad (a nivel de infraestructura), son solamente esos datos los que se deben escoger y descartar el resto.
+
+Además, se debe procurar que las zonas en las que se van a elegir el conjunto de los datos tengan la misma infraestructura.
+
+Por otra parte, anteriormente se ha dicho que se van a usar dos conjuntos de datos distintas, en este proceso de limpieza de datos, afectaría a los dos conjuntos de datos.
+
+*Transformación de los datos*
+
+En el proceso de transformación de los datos, debemos preparar los dos conjuntos de datos y fusionarlos.
+
+Lo primero es normalizar los datos, por ejemplo, el tipo de avería se podría clasificar por un ID, así pasamos de una variable categórica a un valor numérico.
+
+Otro ejemplo, podemos agrupar los valores similares dentro de un periodo de tiempo, es decir si durante 5 horas el flujo siempre ha sido el mismo, simplificar esos 5 registros en uno solo.
+Una vez que tenemos los dos conjuntos de datos preparados debemos fusionarlos para obtener un nuevo conjunto enriquecido.
+
+De los conjuntos de datos, yo usaría las fechas y las zonas para la fusión de los datos, tiendo como resultado un conjunto de datos (aproximado) con los siguientes parámetros:
+  -	Fecha -> la fecha de obtención de los datos
+  -	Zona -> Indica la zona de donde se ha recogido los datos
+  -	¿avería? -> Nos dice si tiene una avería, si no hay, estaría a Nulo.
+  -	Tipo de avería -> nos da el tipo de avería (con su ID) y si no hay estaría a Nulo.
+  -	Conjuntos de parámetros relativos al flujo eléctrico. -> un conjunto de datos que nos de las mediciones de los distintos sensores.
+
+**Proceso de construcción de modelos**
+Una vez que tenemos los datos ya podemos hacer la fase de minería de datos, obteniendo modelos de predicción.
+
+Una visión interesante puede ser, que, para cada tipo de avería, que datos sufren mas variaciones y con que periodo de tiempo es cuando ocurre, con esto se puede sacar unos modelos que dados una serie de circunstancia nos proporcione la probabilidad que ocurra una avería.
+
+Para comprobar el modelo, se puede usar otro conjunto de datos en donde se pruebe si el porcentaje de predicción es válido. Por ejemplo, se puede usar otra zona en la que no se han obtenido mediciones y probar la eficacia del modelo.
+
+**Integración de los resultados**
+Estos modelos, una vez probados y comprobado su funcionamiento, pueden ser integrados en los paneles de control (estos paneles comprueban y recogen los datos de la distribución de la corriente y se comprueba su correcto funcionamiento de los elementos de la red).
+
+La integración con los paneles puede dar un aviso con las mediciones de los días de alteraciones producidas.
+
+
+## Ejercicio 2:
+A partir del juego de datos disponible en el siguiente enlace https://www.kaggle.com/rdoume/beerreviews , realiza las tareas previas a la generación de un modelo de minería de datos explicadas en los módulos "El proceso de minería de datos" y "Preprocesado de los datos y gestión de características". Puedes utilizar de referencia el ejemplo del Titánic.
+
+
+## CARGA Y VERIFICACIÓN DE LOS DATOS
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Cargamos el juego de datos (los campos con espacio en blanco se pondran como nulos)
+Datos_Beer_Completos <- read.csv('beer_reviews.csv',stringsAsFactors = FALSE, na.strings = '')
+
+#Creamos una nueva variable en donde haremos los cambios
+Datos_Beer <- Datos_Beer_Completos
+
+#Obtenemos el numero de filas
+filas=dim(Datos_Beer)[1]
+
+#Verificamos la estructura del juego de datos principal.
+str(Datos_Beer)
+
+```
+Comprobamos que tenemos 1586614 registros relativos a diversos tipos de cervezas y 13 variables que los caracterizan.
+
+A continuación, haré un análisis de las variables contenidas en el fichero:
+
+
+VARIABLES RELATIVAS A LA CERVECERIA
+
+**brewery_id** --> Esta variable corresponde con el ID que tiene la cervecería
+
+**brewery_name** --> Esta variable corresponde con el nombre de la cervecería
+
+
+VARIABLES RELATIVAS A LA CERVEZA
+
+**beer_beerid** --> Esta variable corresponde con el id que se la da a cada cerveza.
+
+**beer_name** --> Esta variable corresponde con el nombre de la cerveza.
+
+**beer_style** --> Esta variable corresponde con el estilo de la cerveza.
+
+**beer_abv** --> Esta variable corresponde con el grado de alcohol de la cerveza.
+
+
+VARIABLES RELATIVAS A LOS USUARIOS Y SUS OPINIONES
+
+**review_profilename** --> Esta variable corresponde con el usuario que ha hecho la review.
+
+**review_palate** --> Esta variable corresponde con la sensación en el paladar de la cerveza.
+
+**review_taste** --> Esta variable corresponde con el sabor de la cerveza.
+
+**review_aroma** --> Esta variable corresponde con el aroma de la cerveza.
+
+**review_appearance** --> Esta variable corresponde con la apariencia de la cerveza.
+
+**review_overall** --> Esta variable corresponde con la valoración general de la cerveza.
+
+**review_time** --> Esta variable corresponde con la fecha de realización de la review.
+
+
+La primeras conclusiones en relación a las variables son:
+
+  - **brewery_id**  y **brewery_name** --> se puede concluir que asocia cada ID con el nombre de cada cerveceria.
+  
+  - **beer_beerid** y **beer_name**    --> se puede concluir que asocia cada ID con el nombre de cada cerveza.
+  
+  - **review_time** --> Esta variable debe ser normalizada de formato UNIX a formato de fecha.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Sacamos las estadísticas básicas
+summary(Datos_Beer)
+
+```
+
+## LIMPIEZA DEL CONJUNTO DE DATOS
+
+Como se puede comprobar, y en el análisis inicial que he realizado, las variables ID`s y los nombres de las cervecerías y cervezas están relacionadas.
+
+Aunque a simple vista de las 4 variables se pueden descartar la mitad, creo que seria correcto (antes de hacer en análisis) gestionar si tienen algunos valores nulos para luego a la hora de obtener las conclusiones no se ponga simplemente un ID refiriendo a la cerveza o cervecería, si no que estas tengan un nombre.  
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# Cargamos los paquetes R que vamos a usar
+library(ggplot2)
+library(dplyr)
+library(plyr)
+library(scales)
+
+# Estadísticas de valores Nulos (como antes he asignado el valor "" como nulo, solo se filtra por los valores nulos)
+
+colSums(is.na(Datos_Beer))
+
+```
+Como se puede comprobar, tenemos 15 valores nulos en los nombres de la cervecerías (brewery_name), 348 en los nombre de usuarios (review_profilename) y 67785 en la graduación de alcohol de las cervezas (beer_abv).
+
+Para el primer y último caso se va a intentar asignar los valores buscando sus ID´s y viendo si en otra entrada con el mismo ID estos valores están completos y para el caso de los nombres de usuarios (review_profilename) se asignará un valor por defecto ("Anonimo"). 
+
+**Valores nulos en el nombre de usuario (review_profilename)**
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Asignamos el valor "Anonimo" en los valores nulos
+Datos_Beer$review_profilename[is.na(Datos_Beer$review_profilename)] <- "Anonimo"
+
+#Comprobamos que para ese tipo de datos ya no hay valores nulos
+colSums(is.na(Datos_Beer))
+
+```
+
+**Valores nulos en el nombre de la cervecería (brewery_name)**
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Obtenemos los ID`s de los valores cuyo nombre de cervecería sea nulo
+valor = Datos_Beer$brewery_id[is.na(Datos_Beer$brewery_name)]
+
+#Comprobamos que el tamaño coincida con los valores obtenidos antes
+length(valor)
+
+#Quitamos los duplicados
+valorSinDuplicados = valor[!duplicated(valor)]
+
+#Comprobamos el tamaño después de quitar duplicados
+length(valorSinDuplicados)
+
+#Vemos los ID´s (Al ser 2 se pueden ver facilmente)
+valorSinDuplicados
+
+#Comprobamos si para cada Id existe algún registro completo
+
+for(i in valorSinDuplicados){
+    
+  aux = is.na(Datos_Beer$brewery_name[valorSinDuplicados[i]])
+  
+  print(aux)
+}
+
+```
+Como se puede comprobar los ID`s 1193 y 27 no tienen ningún campo cuyo nombre de la cervecería (brewery_name) tenga asignado un valor, por lo que asignamos el valor "Desconocido" para los valores vacíos de la variable brewery_name.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Asignamos el valor "Desconocido"
+Datos_Beer$brewery_name[is.na(Datos_Beer$brewery_name)] <- "Desconocido"
+
+#Comprobamos que para ese tipo de datos ya no hay valores nulos
+colSums(is.na(Datos_Beer))
+
+```
+**Valores nulos en la graduación (beer_abv) de la cerveza**
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Obtenemos los ID`s de la cerveza de los valores cuya graduación sea nula
+valorId = Datos_Beer$beer_beerid[is.na(Datos_Beer$beer_abv)]
+
+#Comprobamos que el tamaño coincida con los valores obtenidos antes
+length(valorId)
+
+#Quitamos los duplicados
+valorIdSinDuplicados= valorId[!duplicated(valorId)]
+
+#Comprobamos el tamaño después de quitar duplicados
+length(valorIdSinDuplicados)
+
+#Comprobamos si para cada Id existe algún registro completo
+for(i in valorIdSinDuplicados){
+      
+      #Obtenemos los valores que no sean nulos, excluyendo los nulos.
+      listOfValues <- na.omit(Datos_Beer$beer_abv[Datos_Beer$beer_beerid == i])
+
+      #Si existe algun caso, asignamos el valor de la graduación a todos las cervezas con el mismo ID.
+      if(length(listOfValues)>0 ){
+                Datos_Beer$beer_abv[Datos_Beer$beer_beerid == i] <- listOfValues[1]
+      }
+}
+
+#Comprobamos que para esa tipo de datos si ya no hay valores nulos
+colSums(is.na(Datos_Beer))
+```
+
+Para los valores cuyo ID`s que no tienen ningún campo beer_abv completo, se le asignará un valor por defecto. El valor por defecto será el más común.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Función para calcular el valor más común
+common_value <- function(x) {
+uniqx <- unique(na.omit(x))
+uniqx[which.max(tabulate(match(x, uniqx)))]
+}
+
+#Calculamos el valor más comun
+abv_comun <- common_value(Datos_Beer$beer_abv)
+
+#Asignamos el valor
+Datos_Beer$beer_abv[is.na(Datos_Beer$beer_abv)] <- abv_comun
+
+#Comprobamos que para esa tipo de datos ya no hay valores nulos
+colSums(is.na(Datos_Beer))
+```
+Ahora que hemos tratado los valores nulos, para simplificar el análisis voy a excluir de manera temporal el nombre de la cervecería (brewery_name) y el nombre de la cerveza (beer_name), ya que estos tienen su propio ID. Dichos nombres serán recuperados para las conclusiones.
+
+Por otro lado el nombre de quien ha hecho la review (review_profilename) no lo veo necesario, ya que las conclusiones las queremos sacar de las cevezas en general.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Eliminamos los campos que no usaremos en el análisis.
+Datos_Beer$beer_name <- NULL
+Datos_Beer$brewery_name <- NULL
+Datos_Beer$review_profilename <- NULL
+```
+
+## NORMALIZACIÓN Y DISCRETIZACIÓN DE LOS DATOS
+
+**Normalizar review_time**
+
+En el conjunto de datos, el campo review_time estaba en formato UNIX, para el analísis debemos tenerlo en forma de fecha.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Función para cambiar de UNIX a fecha normal
+unix_Date_Format <- function(x) {
+as.POSIXct(x, origin="1970-01-01")
+}
+
+#Cambiamos el formato en todos los campos
+Datos_Beer$review_time <- unix_Date_Format(Datos_Beer$review_time)
+
+#Nos quedamos solamente con la parte de los años
+Datos_Beer$year <- as.Date(Datos_Beer$review_time)
+Datos_Beer$year <- as.numeric(format(Datos_Beer$year,'%Y'))
+
+#Eliminamos el campo review_time que ya ha sido normalizado y preparardo 
+Datos_Beer$review_time <- NULL
+
+```
+
+**Discretizacion de atributos**
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Sacamos información sobre las distintas posibilidades que existen para cada atributo
+
+apply(Datos_Beer,2, function(x) length(unique(x)))
+```
+**Discretizamos las variables con pocas clases**
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Preparamos la variable beer_style
+
+#Discretizamos la variable beer_style
+style_ID<-as.factor(Datos_Beer$beer_style)
+
+#Añadimos el campo a la tabla
+Datos_Beer$beer_style_ID <- unclass(style_ID)
+
+# Discretizamos las variables con pocas clases
+cols<-c("review_overall","review_aroma","review_appearance","review_palate", "review_taste", "year")
+
+for (i in cols){
+  Datos_Beer[,i] <- as.factor(Datos_Beer[,i])
+}
+
+
+#Eliminamos el campo beer_style que ya ha sido normalizado y preparardo 
+Datos_Beer$beer_style <- NULL
+
+
+# Después de los cambios, analizamos la nueva estructura del conjunto de datos
+str(Datos_Beer)
+```
+
+Como la graduación del alcohol tiene demasiados valores para el análisis, con lo que vamos a agrupar los 530 niveles de estudio en 4 niveles.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+# 1-4: Sin alcohol(1), Tradicional(2), Especial(3), Gran Reserva(4)
+Datos_Beer$beer_abv[between(Datos_Beer$beer_abv,0.0,1.0)] <- 1
+Datos_Beer$beer_abv[between(Datos_Beer$beer_abv,1.01,5.0)] <- 2
+Datos_Beer$beer_abv[between(Datos_Beer$beer_abv,5.01,15.0)] <- 3
+Datos_Beer$beer_abv[between(Datos_Beer$beer_abv,15.01,60)] <- 4
+
+str(Datos_Beer)
+```
+
+
+## Procesos de análisis del conjunto de datos
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#La librería zoom se usa para ver los gráficos de una manera más grande y poder ampliar para ver los datos
+install.packages("zoom")
+library(zoom)
+#Para usar el zoom, poner el comando de abajo después del código del grafico
+#zm()
+```
+
+Nos proponemos analizar las relaciones entre las diferentes variables del conjunto de datos.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Comparamos el grado de alcohol de la cerveza (beer_abv) con la puntuacion que esta tienen (review_overall) 
+ggplot(data=Datos_Beer[1:filas,],aes(x=beer_abv,fill=review_overall))+geom_bar()+ylab("Contador de registros")+xlab("Graduación de alcohol")+ggtitle("Puntuación de las cervezas según su graduación de alcohol")
+
+```
+
+```{R}
+
+#http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf link de los colores
+boxplot (beer_abv ~ review_overall, Datos_Beer,
+main = "Distribución de puntuación por graduación de alcohol",xlab = "Puntuación", ylab = " Graduación",
+col = c("coral1", "goldenrod", "darkgoldenrod", "chartreuse4","aquamarine4","cornflowerblue","deepskyblue2","darkorchid1","hotpink3","deeppink"))
+
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Para un análisis más efectivo se calcularan los porcentajes
+t<-table(Datos_Beer[1:filas,]$beer_abv,Datos_Beer[1:filas,]$review_overall)
+for (i in 1:dim(t)[1]){
+t[i,]<-t[i,]/sum(t[i,])*100
+}
+t
+
+```
+
+Como se puede observar, las cervezas con una graduación media (Tradicional y Especial) tienen un mayor numero de valoraciones respecto a las de una graduación mas baja o mucho más alta.
+
+Si nos fijamos en los porcentajes, el grueso de las valoraciones respecto a la graduación de la cerveza se encuentra en la puntuación 4 y la mejor puntuación (un 5) se las lleva las cervezas con una graduación muy alta.
+
+Sabiendo esto, compararemos las diferentes reviews realizadas respecto al alcohol de la cerveza.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Comparamos el alcohol de las cervezas, la valoracion de estas con las distintas review: aroma, apariencia, sabor paladar, sabor.
+
+ggplot(data = Datos_Beer[1:filas,],aes(x=review_aroma,fill=review_overall))+geom_bar(position="fill")+facet_wrap(~beer_abv)+ylab("Proproción de puntuación general")+xlab("Graduación de Aroma")+ggtitle("Puntuación de las cervezas según su Graduación de Alcohol y su Aroma")
+ggplot(data = Datos_Beer[1:filas,],aes(x=review_appearance,fill=review_overall))+geom_bar(position="fill")+facet_wrap(~beer_abv)+facet_wrap(~beer_abv)+ylab("Proproción de puntuación general")+xlab("Graduación de Apariencia")+ggtitle("Puntuación de las cervezas según su Graduación de Alcohol y su Apariencia")
+ggplot(data = Datos_Beer[1:filas,],aes(x=review_palate,fill=review_overall))+geom_bar(position="fill")+facet_wrap(~beer_abv)+facet_wrap(~beer_abv)+ylab("Proproción de puntuación general")+xlab("Graduación de Sabor al Paladar")+ggtitle("Puntuación de las cervezas según su Graduación de Alcohol y su Sabor Paladar")
+ggplot(data = Datos_Beer[1:filas,],aes(x=review_taste,fill=review_overall))+geom_bar(position="fill")+facet_wrap(~beer_abv)+facet_wrap(~beer_abv)+ylab("Proproción de puntuación general")+xlab("Graduación de Sabor")+ggtitle("Puntuación de las cervezas según su Graduación de Alcohol y su Sabor")
+
+```
+La primera conclusión que se puede obtener a simple vista es que dejando a un lado la graduación de alcohol, las intensidades mas altas (de aroma, apariencia, sabor del paladar y sabor) suelen tener mejor puntuación.
+
+Analizando cada valoración por separado, vemos que el aroma tiene una mejor puntuación en cervezas sin alcohol y el grueso de valoraciones bajas las tiene las cervezas con una graduación de nivel 4 y en el aroma mas bajo.
+
+Respecto a la apariencia, a nivel de mejores puntuaciones (un 5) todas están mas o menos similares, no obstante, si seleccionamos las 3 puntuaciones mas altas (4, 4.5 y 5) las cervezas con una graduación de alcohol de nivel 1 son las peores valoradas y las de los niveles 2 y 3 mejores. La peor valoración como se ve de una manera clara la tiene las cervezas de nivel 2 y una apariencia con puntuación más baja.
+
+Al igual que en el aroma, las cervezas sin alcohol (tipo 1) son las mejores valoradas (con un 5) con las intensidades respecto al sabor del paladar y el grueso de valoraciones bajas las tiene las cervezas con una graduación de nivel 4 y en el aroma más bajo.
+
+Finalmente, en lo relativo al sabor, nos damos cuenta de que las cervezas con un sabor mas fuerte (4, 4.5 y 5) son las mejores valoradas, y se nota un crecimiento en la puntuación considerable respecto a un sabor con puntuaciones más bajas. El grueso de las peores valoraciones son las que tienen una graduación de 4.
+
+Una vez terminado de comparar la puntuaciones de las review con la graduación de la cerveza, se va a proceder a analizar las fechas en que se han realizado las review con las puntuaciones que se han dado.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Comparamos la valoracion con las fechas en que se ha creado cada review.
+
+ggplot(data=Datos_Beer[1:filas,],aes(x=year,fill=review_overall))+geom_bar()+ylab("Contador de registros")+xlab("Años")+ggtitle("Puntuación de las cervezas según el año") +scale_y_continuous(labels = scales::comma)
+
+```
+
+Aunque la salida del grafico se podía intuir, al verlo se demuestra que las puntuaciones de valoraciones son proporcionales (en mayor o menor medida) al número de encuestas realizadas. Además, el grafico se nos muestra que el año 2011 fue el año donde mas encuestas se hicieron y el 2001 el año en que menos.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Comparamos la probabilidad de los diferentes tipos de cervezas y obtenemos su densidad
+hist(Datos_Beer$beer_style_ID, breaks = 104, probability = TRUE, col = "grey", axes = FALSE, main = "", xlab = "ID del tipo de Cerveza",  ylab = "", xaxp= c(1, 104, 104)) 
+axis(1,at = seq(1, 104, by = 1))
+
+# Densidad
+lines(density(Datos_Beer$beer_style_ID), lwd = 3, col = "red")
+
+```
+Como se puede observar, los tipos de cerveza 12, 9, 14, 89, 17 y 2 (se ha usado la función zm() para ver los numero de una manera fácil) son los que más encuestas tienen.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#Creamos un dataFrame con los 6 tipos de cerveza que tienen más valoraciones.
+Datos_Beer_Mejor_Tipo <- Datos_Beer[(Datos_Beer$beer_style_ID == 12 | Datos_Beer$beer_style_ID == 9 |Datos_Beer$beer_style_ID == 14  |Datos_Beer$beer_style_ID == 89  |Datos_Beer$beer_style_ID == 17  |Datos_Beer$beer_style_ID == 2 ),]
+
+# Discretizamos beer_style_ID
+cols<-c("beer_style_ID")
+
+for (i in cols){
+  Datos_Beer_Mejor_Tipo[,i] <- as.factor(Datos_Beer_Mejor_Tipo[,i])
+}
+
+##Comaparamos los parametros de la cerveza con los 6 tipos de cerveza que tienen más valoraciones.##
+
+#Comparamos el grado de alcohol de la cerveza (beer_abv) con el tipo de cerveza
+ggplot(data=Datos_Beer_Mejor_Tipo[1:filas,],aes(x=beer_abv,fill=beer_style_ID))+geom_bar()+ylab("Contador de registros")+xlab("Graduación de alcohol")+ggtitle("Tipo cervezas según su graduación de alcohol")
+
+#Comparamos la puntuación con el tipo de cerveza
+boxplot (review_overall ~  beer_style_ID, Datos_Beer_Mejor_Tipo,
+main = "Distribución de puntuación por tipo de cerveza", xlab = "TIpo de Cerveza", ylab = "Puntuación", 
+col = c("coral1", "dodgerblue4", "firebrick1", "gold2","aquamarine4","chartreuse"))
+
+#Comparamos la puntuación de las cervezas según su Graduación de Alcohol y su Tipo
+ggplot(data = Datos_Beer_Mejor_Tipo[1:filas,],aes(x=beer_style_ID,fill=review_overall))+geom_bar(position="fill")+facet_wrap(~beer_abv)+ylab("Proproción de puntuación general")+xlab("Graduación de Sabor")+ggtitle("Puntuación de las cervezas según su Graduación de Alcohol y su Tipo")
+
+
+
+
+
+```
+
+Como se puede comprobar en el primer gráfico, el grueso de la graduación de alcohol principal de los tipos de cervezas elegidos es el 3. Comparando con el grafico en que se incluyen todos los tipos, es un resultado bastante similar. La única cosa diferente, es que no tenemos en esta simplificación de tipos alcohol de tipo 0.
+
+El segundo gráfico, nos muestra que los tipos de cerveza 12 y 89 suelen tener una puntuación mas alta que los otros cuatro. Esta vez comparando con el grafico con la densidad, el numero 12 es el tipo de cerveza con mas valoraciones y con esta grafica nos damos cuenta de que también es el tipo con mejores valoraciones.
+
+En el ultimo gráfico, observamos la puntuación de las cervezas, con su graduación y su tipo. Podemos observar que solamente las del tipo 12 y 14 tienen una graduación mas alta. Y se confirma que el tipo 12 tiene una puntuación mas alta en todas sus graduaciones de alcohol.
+
+## Conclusión
+
+En este estudio el objetivo ha sido predecir el tipo de gustos que tiene la gente en relación con la cerveza, las encuesta se ha realizado desde el año 1996 y 2012, y el año con mayores valoraciones fue el 2011, no obstante, el número de proporción de puntuaciones respecto al año ha sido de una manera más o menos proporcional.
+
+La primera conclusión que sacamos es que a las personas le gustan las cervezas con un grado de alcohol entre 5 y 15 º mayoritariamente. Aunque también hay un gran porcentaje que prefiere una graduación un poco mas baja (entre 1 y 5º).
+
+A nivel de valoraciones de las cervezas, mientras tengan un sabor, un gusto al paladar, una apariencia y un aroma más fuertes, son mejores recibidas y mejores puntuadas, respecto a sus homólogos más bajos.
+
+A nivel de tipos de cerveza, la mas valorada a nivel de encuestas ha sido la “American Double / Imperial Stout” (Tipo 12) como ganadora en todos sus rangos de graduación de alcohol. En segunda posición la “Roggenbier” (Tipo 89) en sus dos tipos de graduación (2 y 3).
+
+***
+# Criterios de evaluación
+***
+
+Ejercicio 1
+
+Concepto y peso en la nota final
+
+El objetivo del proyecto está correctamente definido con suficiente concreción y se puede resolver con técnicas de minería de datos. 15%
+
+Las fases del ciclo de vida están bien expresadas. Los ejemplos son clarificadores. Se justifica y argumenta de las decisiones que se han tomado. 20%
+
+Ejercicio 2
+
+Se carga la base de datos, se visualiza su estructura y se explican los hechos básicos de los datos. 5%
+
+Se estudia si existen atributos vacíos o en diferentes escalas que haya que normalizar. Si es el caso se adoptan medidas para tratar estos atributos. Se construye un nueva variable útil a partir de las existentes. Se discretiza algún atributo. 20%
+
+Se analizan los datos de forma visual y extraen conclusiones tangibles. Hay que elaborar un discurso coherente y con conclusiones claras. 30%
+
+Se trata en profundidad alguno otro aspecto respecto a los datos presentado en los módulos "Preprocesado de los datos y gestión de características" 10%

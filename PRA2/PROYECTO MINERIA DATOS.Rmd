@@ -1,0 +1,1883 @@
+---
+title: 'Proyecto de minería de datos'
+author: "Autor: Eduardo Mora González"
+date: "Diciembre 2021"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: 75.584-PEC-header.html
+  word_document: default
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+---
+
+
+<style>
+body {
+text-align: justify}
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Instalamos y cargamos las librerías necesarias.
+
+```{r message= FALSE, warning=FALSE}
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('GGally')) install.packages('GGally'); library(GGally)
+if (!require('DataExplorer')) install.packages("DataExplorer"); library(DataExplorer)
+if (!require('dlookr')) install.packages("dlookr"); library(dlookr)
+if (!require('tidymodels')) install.packages("tidymodels"); library(tidymodels)
+if (!require('flextable')) install.packages("flextable"); library(flextable)
+if (!require('corrplot')) install.packages("corrplot"); library(corrplot)
+if (!require('textshape')) install.packages("textshape"); library(textshape)
+if (!require('stats')) install.packages("stats"); library(stats)
+if (!require('FactoMineR')) install.packages("FactoMineR"); library(FactoMineR)
+if (!require('factoextra')) install.packages("factoextra"); library(factoextra)
+if (!require('cluster')) install.packages('cluster'); library(cluster)
+if (!require('dbscan')) install.packages('dbscan'); library('dbscan')
+if (!require('amap')) install.packages('amap'); library('amap')
+if (!require('DescTools')) install.packages('DescTools', repos='http://cran.us.r-project.org'); library(DescTools)
+if (!require('caTools')) install.packages('caTools'); library('caTools')
+if (!require('gmodels')) install.packages('gmodels', repos='http://cran.us.r-project.org'); library(gmodels)
+if (!require('class')) install.packages('class'); library('class')
+```
+
+# Elección del conjunto de datos
+
+En Europa, el paro cardiaco es una de las primeras causas de mortalidad y en España fallecen en torno a 100 personas al día por este suceso (https://fundaciondelcorazon.com/prensa/notas-de-prensa/2900-solo-el-30-de-espanoles-sabe-realizar-la-reanimacion-cardio-pulmonar-rcp-.html), esto representa aproximadamente el 31% de las muertes a nivel mundial.
+
+Por esta razón, se han seleccionado dos conjuntos de datos, el primer conjunto (https://www.kaggle.com/fedesoriano/heart-failure-prediction?select=heart.csv) contiene 12 características y el segundo (https://www.kaggle.com/ronitf/heart-disease-uci) contiene 13 características. Aunque el número de características que contienen son distintas, muchas son comunes entre los dos y esto permitirá crear un conjunto de datos más completo.
+
+Los dos conjuntos de datos han sido elegidos por las características que estos contienen, ya que son los parámetros típicos usados en los estudios de problemas del corazón, y es por eso por lo que tras el análisis de estos se puede sacar unas conclusiones bastantes interesantes.
+
+Finalmente, se puede decir que el objetivo buscado es predecir la posibilidad de que una persona tenga un alto riesgo de ser diagnosticado como un paciente cardíaco a través de las diversas características. Para llegar a al objetivo se tiene pensado realizar diversos métodos de análisis para así relacionar las diversas características para obtener unos parámetros finales y así concluir la posibilidad de que una persona tenga o no una enfermedad cardiaca.
+
+## Exploración del conjunto de datos
+
+A continuación, se van a exponer las diferentes características de los conjuntos de datos.
+
+### Características del Primer conjunto de datos 
+
+Del primer conjunto, como se ha mencionado anteriormente tenemos 12 características distintas:
+
+  + **Age:** edad del paciente [años]
+  + **Sex:** sexo del paciente [M: Masculino, F: Femenino]
+  + **ChestPainType:** tipo de dolor de pecho [TA: angina típica, ATA: angina atípica, NAP: dolor no anginal, ASY: asintomático]
+  + **RestingBP:** presión arterial en reposo [mm Hg]
+  + **Cholesterol:** colesterol sérico [mm / dl]
+  + **FastingBS:** azúcar en sangre en ayunas [1: si BS en ayunas> 120 mg / dl, 0: en caso contrario]
+  + **RestingECG:** resultados del electrocardiograma en reposo [Normal: Normal, ST: con anomalía de la onda ST-T (inversiones de la onda T y / o elevación o           depresión del ST> 0,05 mV), LVH: que muestra una hipertrofia ventricular izquierda probable o definitiva según los criterios de Estes]
+  + **MaxHR:** frecuencia cardíaca máxima alcanzada [Valor numérico entre 60 y 202]
+  + **ExerciseAngina:** angina inducida por el ejercicio [Y: Sí, N: No]
+  + **Oldpeak:** oldpeak = ST [Valor numérico medido en depresión]
+  + **ST_Slope:** la pendiente del segmento ST del ejercicio pico [Up: uploping, Flat: flat, Down: downsloping]
+  + **HeartDisease:** clase de salida [1: enfermedad cardíaca, 0: Normal]
+  
+### Características del Segundo conjunto de datos 
+
+El segundo conjunto de datos tiene las siguientes características:
+
+  + **Age:** la edad de la persona en años
+  + **sex:** el sexo de la persona [1 = hombre, 0 = mujer]
+  + **cp:** el dolor torácico experimentado [valor 0: angina típica, valor 1: angina atípica, valor 2: dolor no anginoso, valor 3: asintomático]
+  + **trestbps:** la presión arterial en reposo de la persona [mm Hg al ingreso en el hospital]
+  + **chol:** la medición del colesterol de la persona en mg / dl
+  + **fbs:** nivel de azúcar en sangre en ayunas de la persona [> 120 mg / dl, 1 = verdadero; 0 = falso]
+  + **restecg:** medición electrocardiográfica en reposo [0 = normal, 1 = con anomalía de la onda ST-T, 2 = mostrando hipertrofia ventricular izquierda probable o        definitiva según los criterios de Estes]
+  + **thalach:** frecuencia cardíaca máxima alcanzada por la persona
+  + **exang:** angina inducida por ejercicio [1 = sí; 0 = no]
+  + **oldpeak:** depresión del ST inducida por el ejercicio en relación con el reposo.
+  + **Slope:** la pendiente del segmento ST de ejercicio pico [Valor 0: pendiente ascendente, Valor 1: plano, Valor 2: pendiente descendente]
+  + **ca:** Número de vasos principales (0-3) coloreados por la floración
+  + **Thal:** Trastorno de la sangre llamado talasemia [3 = normal; 6 = defecto fijo; 7 = defecto reversible]
+  + **target:** clase de salida [1: enfermedad cardíaca, 0: Normal]
+
+### Características comunes y no comunes de los dos juego de datos
+
+Como se puede observar, las características de los dos conjuntos de datos que coinciden son:
+
+Table: Comparación de características 
+
+|**Primer conjunto de datos** |  **Segundo conjunto de datos** |  **Significado ** | 
+|:-----------------------------:|:-------------------------------:|:------------------:|
+|Age | Age | Edad de la persona|
+|Sex | Sex | Sexo de la persona|
+|ChestPainType | cp | Tipo dolor torácico|
+|RestingBP | trestbps | Presión arterial en reposo|
+|Cholesterol | chol | colesterol de la persona|
+|FastingBS | fbs | Nivel de azúcar en sangre|
+|RestingECG | restecg | ECG en reposo|
+|MaxHR | thalach | Frecuencia cardíaca máxima|
+|ExerciseAngina | exang | Angina inducida por ejercicio|
+|Oldpeak | oldpeak | depresión del ST|
+|ST_Slope | Slope | pendiente del segmento ST|
+|HeartDisease | target | ¿Enfermedad Cardiaca?|
+
+
+Las únicas características que no se encuentran en el primer conjunto de datos son:
+
+  + **ca:** Número de vasos principales coloreados por la floración
+  + **Thal:** Trastorno de la sangre llamado talasemia
+  
+
+### Carga de los conjuntos de datos 
+
+Una vez identificadas las características, cargamos los archivos para un análisis exploratorio del conjunto de datos.
+
+```{r message= FALSE, warning=FALSE}
+#Cargamos el primer fichero
+datos1 <- read.csv('heart.csv')
+
+#Cargamos el segundo fichero
+datos2 <- read.csv('heart_1.csv')
+
+#Filas del primer fichero
+filas_1 = dim(datos1)[1]
+
+#Filas del segundo fichero
+filas_2 = dim(datos2)[1]
+```
+
+Ahora vamos a ver las estructura de los juegos de datos
+
+```{r message= FALSE, warning=FALSE}
+#Verificamos la estructura del primer juego
+str(datos1)
+```
+```{r message= FALSE, warning=FALSE}
+#Verificamos la estructura del segundo juego
+str(datos2)
+```
+
+Vamos ahora a sacar estadísticas básicas de los juegos de datos
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas básica del primer juego
+summary(datos1)
+```
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas básica del segundo juego
+summary(datos2)
+```
+
+## Preprocesado y gestión de características
+
+### Valores nulos del conjunto de los datos 
+
+Estadísticas de valores vacíos del primer juego de datos
+
+```{r message= FALSE, warning=FALSE}
+colSums(is.na(datos1))
+```
+```{r message= FALSE, warning=FALSE}
+colSums(datos1=="")
+```
+
+Estadísticas de valores vacíos del segundo juego de datos
+
+```{r message= FALSE, warning=FALSE}
+colSums(is.na(datos2))
+```
+```{r message= FALSE, warning=FALSE}
+colSums(datos2=="")
+```
+Como se puede comprobar, tenemos la “suerte” de no tener ningún valor nulo o vacío en los dos juegos de datos.
+
+### Normalización del conjunto de los datos 
+
+Ahora que hemos comprobado que no tenemos valores nulos, se va a proceder a la normalización de los dos conjuntos de datos. La importancia de este proceso es para que a la hora de juntar los dos juegos de datos estén todos en la misma escala de valores y que así se pueda hacer un merge limpio y rápido.
+
+Para la normalización, se hará un análisis de las características comunes comparando una por una de cada uno de los conjuntos de datos. Además, una vez normalizado se analizarán las características para ver posibles valores incorrectos y poder corregirlos.
+
+  + **EDAD**
+  
+Como se puede comprobar en las estadísticas del primer conjunto de datos las edades van desde los 28 hasta los 77 años, mientras que en el segundo van desde los 29 hasta los 77 años.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica edad del primer conjunto de datos 
+h1 <- hist(datos1$Age, xlab="Edad", col="ivory", ylab="Cantidad", main="EDAD EN EL PRIMER JUEGO DE DATOS", ylim = c(0, 225), xlim = c(20,80))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+#Histograma de la característica edad del segundo conjunto de datos 
+h2 <- hist(datos2$ï..age, xlab="Edad", col="ivory", ylab="Cantidad", main="EDAD EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0, 80), xlim = c(20,80))
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+```
+
+
+
+Como se puede observar, la franja de entre los 50 y 60 años son donde más datos existen, mientras que los extremos donde menos datos.
+
+Una diferencia bastante clara es en la franja de entre los 40 y 45 años, que en el primer conjunto de datos hay un crecimiento de los datos de manera progresiva, mientras que en el segundo existen un crecimiento notable de los datos bastante peculiar en ese rango.
+
+  + **SEXO**
+  
+En esta característica observamos que en primer conjunto de datos están identificado con las variables M (hombre) y F (mujer) mientras que en el segundo juego de datos tenemos 1 (hombre) y 0 (mujer).
+
+Entonces se va a normalizar el primer conjunto de datos para que sea como el segundo, vamos a definir el valor 1 para el hombre y el valor 0 para la mujer.
+
+```{r message= FALSE, warning=FALSE}
+
+#Cambiamos las letras por los números
+datos1$Sex [datos1$Sex == "M"] <- 1
+datos1$Sex [datos1$Sex == "F"] <- 0
+
+#Pasamos de carácter a numérico
+datos1$Sex <- as.numeric(datos1$Sex)
+```
+
+Una vez normalizada la característica , analizamos el conjunto de los datos contemplados en esta.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica sexo del primer conjunto de datos 
+h1 <- hist(datos1$Sex, xlab="Sexo", col=c("ivory", "lightcyan"), ylab="Cantidad", main="SEXO EN EL PRIMER JUEGO DE DATOS", breaks = 2, ylim = c(0, 750), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("Mujeres","Hombres" ))
+axis(2)
+
+#Histograma de la característica sexo del segundo conjunto de datos 
+h2 <-hist(datos2$sex, xlab="Sexo", col=c("ivory", "lightcyan"), ylab="Cantidad", main="SEXO EN EL SEGUNDO JUEGO DE DATOS", breaks = 2, ylim = c(0, 250), axes = FALSE)
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("Mujeres","Hombres" ))
+axis(2)
+```
+
+
+Tras la normalización y la exploración de los datos, nos damos cuenta de que existen mas registros de hombres que de mujeres en los dos conjuntos de datos.
+
+  + **TIPO DE DOLOR TORÁCICO (ChestPainType, cp)**
+  
+Nos damos cuenta de que el primer conjunto de datos viene identificado por 4 variables categóricas (TA: angina típica, ATA: angina atípica, NAP: dolor no anginal, ASY: asintomático) mientras en el segundo conjunto de datos por valores numérico y cada valor asignado a una causa (valor 0: angina típica, valor 1: angina atípica, valor 2: dolor no anginoso, valor 3: asintomático).
+
+La normalización se hará para el primer conjunto de datos, asignando los valores (que son los del segundo conjunto de datos) de la siguiente manera:
+
+    + 0 = TA
+    + 1 = ATA
+    + 2 = NAP
+    + 3 = ASY
+    
+
+```{r message= FALSE, warning=FALSE}
+#Cambiamos las letras por los números
+datos1$ChestPainType [datos1$ChestPainType == "TA"]  <- 0
+datos1$ChestPainType [datos1$ChestPainType == "ATA"] <- 1
+datos1$ChestPainType [datos1$ChestPainType == "NAP"] <- 2
+datos1$ChestPainType [datos1$ChestPainType == "ASY"] <- 3
+
+#Pasamos de carácter a numérico
+datos1$ChestPainType <- as.numeric(datos1$ChestPainType)
+```
+
+Una vez normalizada la característica , analizamos el conjunto de los datos contemplados en esta.
+
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Tipo de dolor torácico del primer conjunto de datos 
+h1 <- hist(datos1$ChestPainType, xlab="Tipo de dolor torácico", col= c("ivory", "lightcyan", "ORANGE", "PINK"), ylab="Cantidad", main="TIPO DOLOR TORÁCICO EN EL PRIMER JUEGO DE DATOS", ylim = c(0, 550),axes = FALSE, breaks=seq(min(datos1$ChestPainType)-0.5, max(datos1$ChestPainType)+0.5, by=1) )
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0,1,2,3), cex.axis=1, labels = c("Angina típica", "Angina atípica","Dolor no anginal", "Asintomático" ))
+axis(2)
+
+#Histograma de la característica Tipo de dolor torácico del segundo conjunto de datos 
+h2 <- hist(datos2$cp, xlab="Tipo de dolor torácico", col= c("ivory", "lightcyan", "ORANGE", "PINK"), ylab="Cantidad", main="TIPO DOLOR TORÁCICO EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0, 160),axes = FALSE, breaks=seq(min(datos2$cp)-0.5, max(datos2$cp)+0.5, by=1) )
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.2,0.85,1.75,2.75), cex.axis=1, labels = c("Angina típica", "Angina atípica","Dolor no anginal", "Asintomático" ))
+axis(2)
+```
+
+Como se puede comprobar, en los dos conjuntos de datos tenemos diversas proporciones del tipo de dolor torácico, lo que supone tener mas variedad a la hora de poder sacar conclusiones.
+
+  + **PRESIÓN ARTERIAL EN REPOSO (RestingBP y trestbps)**
+
+Como se muestran en las estadísticas esta característica son de tipo numérico y en el primer conjunto de datos va desde 0 hasta 200 y en el segundo de 94 a 200.
+
+Como se puede apreciar, tener una presión arterial de 0 es estar considerado muerto, por lo que considero que el valor 0 es un valor nulo.
+
+Lo primero que se va a hacer es obtener el número de casos que la presión arterial es 0, y se consideraran las diversas formas de tratar estos datos.
+
+
+```{r message= FALSE, warning=FALSE}
+#Veces que aparece el valor cero en la presion arterial
+length(datos1$RestingBP[datos1$RestingBP == 0])
+```
+Como solo aparece una vez, se le asignará un valor por defecto. El valor por defecto será el más común.
+
+```{r message= FALSE, warning=FALSE}
+
+#Función para calcular el valor más común
+common_value <- function(x) {
+uniqx <- unique(na.omit(x))
+uniqx[which.max(tabulate(match(x, uniqx)))]
+}
+
+#Calculamos el valor más comun
+BP_comun <- common_value(datos1$RestingBP)
+
+#Asignamos el valor
+datos1$RestingBP[datos1$RestingBP == 0] <- BP_comun
+
+#vemos las estaditicas del dato
+summary(datos1$RestingBP)
+```
+Ahora ya tenemos los valores entre 80 y 200 que son un rango normal para estos valores.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Presión Arterial del primer conjunto de datos 
+h1 <- hist(datos1$RestingBP, xlab="Presión Arterial", col="ivory", ylab="Cantidad", main="PRESIÓN ARTERIAL EN REPOSO EN EL PRIMER JUEGO DE DATOS", ylim = c(0, 225), xlim = c(80,200))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+#Histograma de la característica Presión Arterial del segundo conjunto de datos 
+h1 <- hist(datos2$trestbps, xlab="Presión Arterial", col="ivory", ylab="Cantidad", main="PRESIÓN ARTERIAL EN REPOSO EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0, 100), xlim = c(80,200))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+```
+
+Se puede observar que el grueso de los datos está entre 100 y 160 en los dos conjuntos de datos.
+
+  + **COLESTEROL (Cholesterol y chol)**
+
+La siguiente característica en ambos conjuntos de datos es de tipo numérico. Al igual que en la presión arterial en reposo, en el primer data set tenemos valores 0 que debemos analizar, mientras que en el segundo data set tenemos datos que abarcan desde el 126 hasta 564.
+
+Lo primero que se va a hacer es obtener el numero de casos que el coresterol es 0, y se consideraran las diversas formas de tratar estos datos.
+
+```{r message= FALSE, warning=FALSE}
+#Veces que aparece el valor cero en la presion arterial
+length(datos1$RestingBP[datos1$Cholesterol == 0])
+```
+Esta vez tenemos 172 casos en lo que ocurre esto (equivale a un 18% de los casos totales). Antes de ver que valor se le asignan, se va a graficar los datos para ver de manera grafica que opción tomar: el valor medio o el más común.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Coresterol del primer conjunto de datos 
+h1 <- hist(datos1$Cholesterol, xlab="Coresterol", col="ivory", ylab="Cantidad", main="CORESTEROL EN EL PRIMER JUEGO DE DATOS SIN TRATAR NULOS", ylim = c(0,300), xlim = c(0, 700))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+#Histograma de la característica Coresterol del segundo conjunto de datos 
+h1 <- hist(datos2$chol, xlab="Coresterol", col="ivory", ylab="Cantidad", main="CORESTEROL EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0,150), xlim = c(0, 700))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+```
+
+Tras analizar la gráfica y para no perder estos datos, se le asignaran un valor por defecto, que será la media de los datos. Esta decisión se ha tomado ya que poner el más común, nos crearía un conjunto de datos muy distintos entre unas medidas y otras, mientras que poner la media sería un valor que tenga en cuenta el grueso de todos los datos.
+
+
+```{r message= FALSE, warning=FALSE}
+
+#Calculamos el valor más comun
+coresterol_media <- mean(datos1$Cholesterol)
+
+#Asignamos el valor truncado para evitar decimales
+datos1$Cholesterol[datos1$Cholesterol == 0] <- trunc(coresterol_media)
+
+#vemos las estaditicas del dato
+summary(datos1$RestingBP)
+
+```
+
+Ahora ya tenemos los valores entre 80 y 200 que son un rango normal para estos valores.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Coresterol del primer conjunto de datos 
+h1 <- hist(datos1$Cholesterol, xlab="Coresterol", col="ivory", ylab="Cantidad", main="CORESTEROL EN EL PRIMER JUEGO DE DATOS", ylim = c(0,330), xlim = c(0, 700))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+#Histograma de la característica Coresterol del segundo conjunto de datos 
+h1 <- hist(datos2$chol, xlab="Coresterol", col="ivory", ylab="Cantidad", main="CORESTEROL EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0,150), xlim = c(0, 700))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+```
+
+  + **NIVEL DE AZÚCAR EN SANGRE EN AYUNAS (FastingBS y fbs)**
+
+Como se puede comprobar el conjunto de los datos puedes ser 1 o 0, es decir verdadero o falso si se cumple la siguiente condición: si nivel de azúcar en sangre en ayunas> 120 mg / dl.
+
+En esta característica no tenemos valores nulos, así que vamos a ver la distribución de las dos opciones.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Azúcar en sangre en ayunas del primer conjunto de datos 
+h1 <- hist(datos1$FastingBS, xlab="¿Azúcar en sangre en ayunas> 120 mg / dl?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="NIVEL DE AZÚCAR EN EL PRIMER JUEGO DE DATOS", breaks = 2, ylim = c(0, 750), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+
+#Histograma de la característica Azúcar en sangre en ayunas del segundo conjunto de datos 
+h2 <-hist(datos2$fbs, xlab="¿Azúcar en sangre en ayunas> 120 mg / dl?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="NIVEL DE AZÚCAR EN EL SEGUNDO JUEGO DE DATOS", breaks = 2, ylim = c(0, 280), axes = FALSE)
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+```
+
+Se puede comprobar que hay mas casos que NO se cumple esa condición de que SÍ.
+
+  + **ECG EN REPOSO (RestingECG y restecg)**
+
+En el primer conjunto de datos tenemos diferentes parámetros que esta característica puede tomar:
+
+     + Normal: Normal, 
+     + ST: con anomalía de la onda ST-T
+     + LVH: que muestra una hipertrofia ventricular izquierda probable o definitiva según los criterios de Estes.
+  
+En el segundo conjunto de datos, los diferentes parámetros que esta característica puede tomas son:
+
+    + 0 = normal
+    + 1 = con anomalía de la onda ST-T
+    + 2 = mostrando hipertrofia ventricular izquierda probable o definitiva según los criterios de Estes.
+
+Para normalizar los dos conjuntos de datos, se cambiará los valores del primer conjunto de datos para que sean equivalentes al segundo.
+
+```{r message= FALSE, warning=FALSE}
+#Cambiamos las letras por los números
+datos1$RestingECG [datos1$RestingECG == "Normal"]  <- 0
+datos1$RestingECG [datos1$RestingECG == "ST"] <- 1
+datos1$RestingECG [datos1$RestingECG == "LVH"] <- 2
+
+#Pasamos de carácter a numérico
+datos1$RestingECG <- as.numeric(datos1$RestingECG)
+```
+
+Una vez normalizada la característica , analizamos el conjunto de los datos contemplados en esta.
+
+```{r message= FALSE, warning=FALSE}
+
+#Histograma de la característica ECG en reposo del primer conjunto de datos 
+h1 <- hist(datos1$RestingECG, xlab="ECG en reposo", col= c("ivory", "lightcyan", "ORANGE"), ylab="Cantidad", main="ECG EN REPOSO EN EL PRIMER JUEGO DE DATOS", ylim = c(0, 600), axes = FALSE, breaks=seq(min(datos1$RestingECG)-0.5, max(datos1$RestingECG)+0.5, by=1) )
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75, 1.75 ), cex.axis=1, labels = c("Normal","ST", "LVH"))
+axis(2)
+
+#Histograma de la característica ECG en reposo del segundo conjunto de datos 
+h1 <- hist(datos2$restecg, xlab="ECG en reposo", col= c("ivory", "lightcyan", "ORANGE"), ylab="Cantidad", main="ECG EN REPOSO EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0, 160), axes = FALSE,breaks=seq(min(datos2$restecg)-0.5, max(datos2$restecg)+0.5, by=1) )
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75, 1.75 ), cex.axis=1, labels = c("Normal","ST", "LVH"))
+axis(2)
+
+```
+
+Como se puede contemplar en el primer conjunto de datos los valores HVI es el segundo grupo con más registros, y en el segundo supone un conjunto muy bajo de todas las muestras mientras que las otras dos opciones están muy igualadas.
+
+  + **FRECUENCIA CARDÍACA MÁXIMA (MaxHR, thalach)**
+
+Dicha característica es de carácter numérica y en el primer conjunto de datos contempla valores desde el 60 al 202 y en el segundo desde el 71 hasta el 202.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Frecuencia Cardíaca Máxima del primer conjunto de datos 
+h1 <- hist(datos1$MaxHR, xlab="Frecuencia Cardíaca Máxima", col="ivory", ylab="Cantidad", main="FRECUENCIA CARDÍACA MÁXIMA EN EL PRIMER JUEGO DE DATOS", ylim = c(0,140), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(60, 70, 80,90,100,110,120,130,140,150,160,170,180,190,200,210), cex.axis=1)
+axis(2)
+
+#Histograma de la característica Frecuencia Cardíaca Máxima del segundo conjunto de datos 
+h1 <- hist(datos2$thalach, xlab="Frecuencia Cardíaca Máxima", col="ivory", ylab="Cantidad", main="FRECUENCIA CARDÍACA MÁXIMA EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0,60), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(60, 70, 80,90,100,110,120,130,140,150,160,170,180,190,200,210), cex.axis=1)
+axis(2)
+```
+
+Se puede comprobar que los extremos en los dos conjuntos de datos tienen menos valores, y que el grueso de las muestras se encuentran entre los valores centrales (desde 100 a 180).
+
+  + **ANGINA INDUCIDA POR EJERCICIO (ExerciseAngina, exang)**
+
+En el primer conjunto de datos tiene los valores Y: Sí, N: No, mientras que en el segundo 1 = sí; 0 = no.
+
+Al igual que se ha hecho con otras características, se normalizará el primer conjunto a favor del segundo conjunto de datos.
+
+```{r message= FALSE, warning=FALSE}
+#Cambiamos las letras por los números
+datos1$ExerciseAngina [datos1$ExerciseAngina == "N"]  <- 0
+datos1$ExerciseAngina [datos1$ExerciseAngina == "Y"]  <- 1
+
+#Pasamos de carácter a numérico
+datos1$ExerciseAngina <- as.numeric(datos1$ExerciseAngina)
+```
+
+Una vez normalizada la característica , analizamos el conjunto de los datos contemplados en esta.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Angina inducida por ejercicio del primer conjunto de datos
+h1 <- hist(datos1$ExerciseAngina, xlab="¿Angina inducida por ejercicio?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="ANGINA INDUCIDA POR EJERCICIO EN EL PRIMER JUEGO DE DATOS", breaks = 2, ylim = c(0, 600), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+
+#Histograma de la característica Angina inducida por ejercicio del segundo conjunto de datos
+h2 <-hist(datos2$exang, xlab="¿Angina inducida por ejercicio?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="ANGINA INDUCIDA POR EJERCICIO EN EL SEGUNDO JUEGO DE DATOS", breaks = 2, ylim = c(0, 220), axes = FALSE)
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+```
+
+Como se puede apreciar, hay mas casos en que NO se ha producido una angina inducida por el ejercicio de que Si se haya producido en los dos conjuntos de datos.
+
+  + **OLDPEAK**
+
+Esta característica de tipo numérica puede abarcar valores negativos hasta (en el caso del primer conjunto) hasta un máximo de un valor igual a 6,2 (en ambos conjuntos de datos)
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Oldpeak del primer conjunto de datos
+h1 <- hist(datos1$Oldpeak, xlab="Oldpeak", col="ivory", ylab="Cantidad", main="OLDPEAK EN EL PRIMER JUEGO DE DATOS", ylim = c(0,400), xlim = c(-4, 8))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+
+#Histograma de la característica Oldpeak del segundo conjunto de datos
+h1 <- hist(datos2$oldpeak, xlab="Oldpeak", col="ivory", ylab="Cantidad", main="OLDPEAK EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0,150), xlim = c(0, 8))
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+```
+
+Se puede comprobar que el grueso de las muestras se encuentra entre los valores centrales en el primer caso mientras que en el segundo juego de datos los valores iniciales tienen mas muestras. Observar que en el segundo conjunto tiene rango de valores positivos, mientras que en el primer conjunto de datos abarca un rango mas amplio.
+
+  + **PENDIENTE DEL SEGMENTO ST (ST_Slope, pendiente)**
+  
+Como ocurría en otras características anteriores cada conjunto de datos los mide de una manera distinta, siendo en el primer conjunto:
+
+    + Up: uploping
+    + Flat: flat
+    + Down: downsloping
+  
+Y en el segundo conjunto de datos:
+
+    + Valor 0: pendiente ascendente
+    + Valor 1: plano
+    + Valor 2: pendiente descendente
+  
+Y como se ha realizado antes, se normalizará el primer conjunto a favor del segundo.
+
+```{r message= FALSE, warning=FALSE}
+#Cambiamos las letras por los números
+datos1$ST_Slope [datos1$ST_Slope == "Up"]   <- 0
+datos1$ST_Slope [datos1$ST_Slope == "Flat"] <- 1
+datos1$ST_Slope [datos1$ST_Slope == "Down"] <- 2
+
+#Pasamos de carácter a numérico
+datos1$ST_Slope <- as.numeric(datos1$ST_Slope)
+```
+
+Una vez normalizada la característica , analizamos el conjunto de los datos contemplados en esta.
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica Pendiente del segmento ST del primer conjunto de datos
+h1 <- hist(datos1$ST_Slope, xlab="Pendiente del segmento ST", col= c("ivory", "lightcyan", "ORANGE"), ylab="Cantidad", main="PENDIENTE DEL SEGMENTO ST EN EL PRIMER JUEGO DE DATOS", ylim = c(0, 500), axes = FALSE,breaks=seq(min(datos1$ST_Slope)-0.5, max(datos1$ST_Slope)+0.5, by=1) )
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75,1.75), cex.axis=1, labels = c("Ascendente","Plano", "Descendente"))
+axis(2)
+
+#Histograma de la característica Pendiente del segmento ST del segundo conjunto de datos
+h1 <- hist(datos2$slope, xlab="Pendiente del segmento ST", col= c("ivory", "lightcyan", "ORANGE"), ylab="Cantidad", main="PENDIENTE DEL SEGMENTO ST EN EL SEGUNDO JUEGO DE DATOS", ylim = c(0, 160), axes = FALSE,breaks=seq(min(datos2$slope)-0.5, max(datos2$slope)+0.5, by=1) )
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75,1.75), cex.axis=1, labels = c("Ascendente","Plano", "Descendente"))
+axis(2)
+```
+
+El caso más común de ambos conjuntos es que la pendiente sea plana, sin embargo en el primer conjunto la tendencia del segundo caso más común es ascendente y en el segundo conjunto descendente. Esto es bastante bueno ya que nos permite tener una visión mas amplia de todos los tipos de pendientes.
+
+  + **¿ENFERMEDAD CARDIACA? (HeartDisease, target)**
+  
+En los dos conjuntos de datos tienen normalizada la salida usando el valor 1: enfermedad cardíaca, y el valor 0: Normal.
+
+
+```{r message= FALSE, warning=FALSE}
+#Histograma de la característica¿Enfermedad Cardiaca? del primer conjunto de datos
+h1 <- hist(datos1$HeartDisease, xlab="¿Enfermedad Cardiaca?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="¿ENFERMEDAD CARDIACA? EN EL PRIMER JUEGO DE DATOS", breaks = 2, ylim = c(0, 600), axes = FALSE)
+text(h1$mids,h1$counts,labels=h1$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+
+#Histograma de la característica ¿Enfermedad Cardiaca? del segundo conjunto de datos
+h2 <-hist(datos2$target, xlab="¿Enfermedad Cardiaca?", col=c("ivory", "lightcyan"), ylab="Cantidad", main="¿ENFERMEDAD CARDIACA? EN EL SEGUNDO JUEGO DE DATOS", breaks = 2, ylim = c(0, 220), axes = FALSE)
+text(h2$mids,h2$counts,labels=h2$counts, adj=c(0.5, -0.5))
+axis(1, at =c(0.25, 0.75), cex.axis=1, labels = c("NO","SI" ))
+axis(2)
+```
+
+Como se puede observar hay mas casos en que SI hay enfermedad cardiaca que caso en los que NO hay.
+
+
+### Tratamiento características distintas 
+
+Antes se ha mencionado que el segundo conjunto tiene dos características presentes que el primer conjunto no tiene. Haciendo un análisis de las estadísticas y la definición de dada al principio de cada una de las dos características, se ha decidió descartarlas por las siguientes razones:
+
+     + Si se quieren tener en cuenta tendremos casi el 75 % de valores nulos.
+     + En el caso del numero de vasos afectado (CA) es algo especial para cada caso y no se puede obtener similitudes con otros casos.
+     + La Talasemia tampoco se puede calcular la cantidad que tiene a través de otros campos.
+
+Una vez que tenemos todas las características de los dos conjuntos con la misma normalización, se va a juntar los dos conjuntos de datos en uno solo.
+
+## Construcción de conjunto de datos final
+
+### Normalización de nombres de columnas 
+
+Lo primero es la normalización de los nombre de las columnas de los dos conjunto de datos
+```{r message= FALSE, warning=FALSE}
+
+#Obtenemos el nombre de las columnas del primer conjunto de datos
+colnames(datos1)
+
+```
+
+```{r message= FALSE, warning=FALSE}
+#Renombramos las columnas del primer conjunto de datos
+
+colnames(datos1)[1]<-  "EDAD"
+colnames(datos1)[2]<-  "SEXO"
+colnames(datos1)[3]<-  "TIPO DOLOR TORAX"
+colnames(datos1)[4]<-  "PRESIÓN ARTERIAL"
+colnames(datos1)[5]<-  "CORESTEROL"
+colnames(datos1)[6]<-  "NIVEL DE AZÚCAR"
+colnames(datos1)[7]<-  "ECG EN REPOSO"
+colnames(datos1)[8]<-  "FREC CARDÍACA MÁX"
+colnames(datos1)[9]<-  "ANGINA x EJERCICIO"
+colnames(datos1)[10]<- "OLDPEAK"
+colnames(datos1)[11]<- "PENDIENTE ST"
+colnames(datos1)[12]<- "E. CARDIACA"
+
+
+#Vemos el nombre de las columnas del primer conjunto de datos
+colnames(datos1)
+```
+```{r message= FALSE, warning=FALSE}
+
+#Obtenemos el nombre de las columnas del segundo conjunto de datos
+colnames(datos2)
+
+```
+```{r message= FALSE, warning=FALSE}
+#Renombramos las columnas del primer segundo de datos
+
+colnames(datos2)[1]<-  "EDAD"
+colnames(datos2)[2]<-  "SEXO"
+colnames(datos2)[3]<-  "TIPO DOLOR TORAX"
+colnames(datos2)[4]<-  "PRESIÓN ARTERIAL"
+colnames(datos2)[5]<-  "CORESTEROL"
+colnames(datos2)[6]<-  "NIVEL DE AZÚCAR"
+colnames(datos2)[7]<-  "ECG EN REPOSO"
+colnames(datos2)[8]<-  "FREC CARDÍACA MÁX"
+colnames(datos2)[9]<-  "ANGINA x EJERCICIO"
+colnames(datos2)[10]<- "OLDPEAK"
+colnames(datos2)[11]<- "PENDIENTE ST"
+colnames(datos2)[14]<- "E. CARDIACA"
+
+#Eliminamos las colunmas que no vamos a usar
+datos2$ca <- NULL
+datos2$thal <- NULL
+
+#Vemos el nombre de las columnas del primer conjunto de datos
+colnames(datos2)
+```
+
+### Fusión de los conjuntos de datos
+
+```{r message= FALSE, warning=FALSE}
+#Fusionamos los dos conjuntos de datos
+datos_final <- merge(x=datos1, y=datos2, all = TRUE)
+
+#Verificamos la estructura del segundo juego
+str(datos_final)
+```
+```{r message= FALSE, warning=FALSE}
+#Estadísticas básicas
+summary(datos_final)
+
+#Comprobar valores nulos
+plot_missing(datos_final)
+```
+
+Podemos concluir que el nuevo juego de datos tiene las siguientes características:
+
+  + **Edad:** la edad de la persona en años.
+  
+  + **Sexo:** el sexo de la persona. Los valores que puede tomar son: 
+    - 1 = hombre.
+    - 0 = mujer.
+  
+  + **Tipo de dolor Torax:** tipo de dolor torácico experimentado. Los valores que puede tomar son: 
+    - 0 = Angina típica.
+    - 1 = Angina atípica.
+    - 2 = Dolor no anginoso.
+    - 3 = Asintomático.
+  
+  + **Presión arterial:** la presión arterial en reposo de la persona (medido en mm/Hg) al ingreso en el hospital.
+  
+  + **Colesterol:** colesterol sérico de la persona [medido eb mm/dl]
+  
+  + **Nivel de azúcar en sangre:** estando el paciente en ayunas. Los valores que puede tomar son dada la siguiente condición  <<azúcar > 120 mg/dl>> son:
+    - 1 = Verdadero.
+    - 0 = Falso.
+  
+  + **ECG en reposo:** resultados del electrocardiograma en reposo. Los valores que puede tomar son:
+    - 0 = Normal.
+    - 1 = Con anomalía de la onda ST-T.
+    - 2 = Mostrando hipertrofia ventricular izquierda probable o definitiva según los criterios de Estes.
+    
+  + **Frec cardíaca max:** frecuencia cardíaca máxima alcanzada por la persona.
+  
+  + **Angina x ejercicio:** si se ha producido una angina al realizar ejercicio. Los valores que puede tomar son: 
+    - 1 = Sí.
+    - 0 = No.
+  
+  + **Oldpeak:** depresión del ST inducida por el ejercicio en relación con el reposo.
+  
+  + **Pendiente ST:** la pendiente del segmento ST de ejercicio pico. Los valores que puede tomar son:
+    - 0 = Pendiente Ascendente.
+    - 1 = Plano.
+    - 2 = Pendiente Descendente.
+  
+  + **¿E. Cardíaca?:** si la persona tiene alguna enfermedad cardíaca. Los valores que puede tomar son: 
+    - 1 = Sí.
+    - 0 = No.
+
+### Análisis exploratorio del nuevo conjunto de datos 
+
+Una vez descrito el nuevo juego de datos, se va a generar histogramas para verificar la distribución de las variables.
+
+```{r message= FALSE, warning=FALSE}
+
+library(purrr)
+library(tidyr)
+library(ggplot2)
+
+datos_final %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram(col="red",
+                   fill="green",
+                   alpha = 0.5,) +
+    ggtitle("Distribuciones de las variables numéricas")
+
+
+```
+
+|**NOMBRE VARIABLE** |  **DISTRIBUCIÓN** | **EXPLICACIÓN**| 
+|:---------:|:---------:|:------------------------------|
+|**ANGINA x EJERCICIO** | Normal | Hay mas casos en que la angina no ha sido inducida por ejercicio|
+|**CORESTEROL** | Sesgado a la derecha | Cifras más "bajas" tienen más registros que cifras más altas|
+|**E. CARDIACA** | Normal | Hay más casos en que se tiene una enfermedad cardiaca|
+|**ECG EN REPOSO** | Sesgado a la derecha | Casos normales tienen mayor peso que con alguna patología|
+|**EDAD** | Normal | Hay más casos en personas con mediana edad que en los extremos|
+|**FREC CARDÍACA MÁX** | Normal | Frecuencia de los datos entre rangos intermedios |
+|**NIVEL DE AZÚCAR** | Sesgado a la derecha | Hay más casos en que se tiene el nivel bien|
+|**OLDPEAK** | Sesgado a la derecha | Existe un grupo con una diferencia bastante grande que con el resto de los datos|
+|**PENDIENTE ST** | Normal | Más casos con pendiente normal que alterada|
+|**PRESIÓN ARTERIAL** | Normal | Frecuencia de los datos entre rangos intermedios|
+|**SEXO** | Sesgado a la izquierda | Hay más pacientes hombres que mujeres|
+|**TIPO DOLOR TORAX** | Sesgado a la izquierda | Hay más casos asintomáticos|
+
+Solo 5 de las doce características tienen una distribución normal, aunque debemos contemplar que alguna de las características está normalizada para tratar dos o tres valores que esas características pueden tener, teniendo en cuenta esto ultimo podemos decir que las únicas dos características que tienen distribuciones distintas son: **Colesterol** y **Oldpeak**.
+
+Para comprobar que estamos en los cierto en las dos características con distribución sesgada (Colesterol y Oldpeak) se va a realizar test de normalidad para verificar y con la “función qqnorm” podríamos hacer un Q-Q plot para ver si una variable determinada tiene una distribución normal.
+
+```{r message= FALSE, warning=FALSE}
+#Colesterol
+qqnorm(datos_final$CORESTEROL);qqline(datos_final$CORESTEROL, col = 2)
+
+#Oldpeak
+qqnorm(datos_final$OLDPEAK);qqline(datos_final$OLDPEAK, col = 2)
+```
+
+El procedimiento que se puede seguir cuando tenemos una variable que no sigue una distribución normal es la de aplicar el logaritmo a la variable. Lo verificamos de la siguiente manera para las dos características: Colesterol y Oldpeak.
+
+```{r message= FALSE, warning=FALSE}
+
+#Coresterol 
+Coresterol_log<- log(datos_final$CORESTEROL)
+ggplot(datos_final, aes(x = Coresterol_log)) + geom_histogram() + xlab("CORESTEROL")
+
+#Oldpeak. 
+Oldpeak_log<- log(datos_final$OLDPEAK)
+ggplot(datos_final, aes(x = Oldpeak_log)) + geom_histogram() + xlab("OLDPEAK")
+
+```
+
+Observamos como ahora cambia las distribuciones. Lo comprobamos con el Q-Q plot para confirmarlo. 
+
+```{r message= FALSE, warning=FALSE}
+#Colesterol
+qqnorm(datos_final$CORESTEROL);qqline(datos_final$CORESTEROL, col = 2)
+
+#Oldpeak
+qqnorm(datos_final$OLDPEAK);qqline(datos_final$OLDPEAK, col = 2)
+```
+
+Los test de normalidad no son los esperados, así que se mantendrán estos valores tal y como están. Y continuamos con el análisis exploratorio del nuevo conjunto de datos.
+
+A continuación, se va a representar los niveles de ciertas características en relación con otras
+
+```{r message= FALSE, warning=FALSE}
+#Relación de la Edad, la Presión arterial y la Frecuencia Cardiaca Máxima.
+datos_final %>%
+  ggplot(aes(x=EDAD,y=`PRESIÓN ARTERIAL`,color=`FREC CARDÍACA MÁX`))+
+  geom_point(alpha=0.7)+xlab("EDAD") +
+  ylab("PRESIÓN ARTERIAL")+
+  ggtitle("Relación de la Edad, la Presión arterial y la Frecuencia Cardiaca Máxima")
+
+#Relación de la Edad, el Coresterol y la Frecuencia Cardiaca máxima.
+datos_final %>%
+  ggplot(aes(x=EDAD,y=CORESTEROL,color=`FREC CARDÍACA MÁX`))+
+  geom_point(alpha=0.7)+xlab("EDAD") +
+  ylab("CORESTEROL")+
+  ggtitle("Relación de la Edad, el Oldpeak y la Frecuencia Cardiaca Máxima")
+
+#Relación de la Edad, el Coresterol y la Frecuencia Cardiaca máxima.
+datos_final %>%
+  ggplot(aes(x=EDAD,y=OLDPEAK,color=`FREC CARDÍACA MÁX`))+
+  geom_point(alpha=0.7)+xlab("EDAD") +
+  ylab("OLDPEAK")+
+  ggtitle("Relación de la Edad, el Oldpeak y la Frecuencia Cardiaca Máxima")
+
+```
+
+Gracias a estas representaciones se pueden ver las relaciones entre unas características y otras.
+
+Por ultimo se va a mirar a través de los diagramas de cajas el rango de las características enfrentado a si un paciente tiene una enfermedad cardiaca o no.
+
+```{r message= FALSE, warning=FALSE}
+#Diagrama de caja de todas las características enfrentadas a si un paciente tiene enfermedad cardiaca
+plot_boxplot(datos_final, by = "E. CARDIACA")
+```
+
+### Correlaciones
+
+Una vez realizado el análisis exploratorio, se va a realizar las correlaciones de las características
+
+```{r message= FALSE, warning=FALSE}
+
+#Calculamos las correlaciones
+cor_datos <- cor(datos_final)
+cor_datos
+
+#Representación de las correlaciones
+corrplot(cor_datos, method = "pie", type="upper")
+
+#Representación de las correlaciones II
+corrplot(cor_datos, method = 'shade', order = 'AOE')
+
+#Representación de las correlaciones III
+corrplot(cor_datos, method = 'color', order = 'alphabet')
+
+```
+
+Para representar las correlaciones, se ha usado diferentes métodos para ver las relaciones entre las características y verlo de una manera más clara.
+
+### Análisis de componentes principales (PCA)
+
+Ahora se va a realizar un análisis de componentes sobre el conjunto de datos final. Lo primero que vamos a calcular es la varianza de todas las caracteristicas
+
+```{r message= FALSE, warning=FALSE}
+
+#Cálculo de la varianza de los componentes.
+var <- apply(datos_final, 2, var)
+var
+```
+
+Como se puede observar de una manera bastante clara, el colesterol es la característica que mas varia de un individuo a otro.
+
+Lo siguiente es centrar y escalar las características, para que así las variables pierdan esa variabilidad. Una vez calculada la matriz se la asigno al pca
+
+```{r message= FALSE, warning=FALSE}
+
+#Calculo de la descomposición de los componentes
+pca <- prcomp(datos_final, scale = TRUE, center = TRUE)
+pca
+
+```
+
+Se puede ver que la primera componente tiene la mayor desviación estándar de todos los componentes. Para verlo de una manera mas clara, se va a representar de una manera grafica la salida anterior
+
+
+```{r message= FALSE, warning=FALSE}
+
+#Representación PCA´s anteriores
+screeplot(pca)
+plot(pca, type = "l")
+
+#Juntamos las dos gráficas anteriores
+fviz_eig(pca)
+
+```
+
+Como se ha dicho antes, tanto de una manera numérica como gráfica, el PC1 es el que mejor de todos con una diferencia notable. Si usamos la técnica del codo, deberíamos coger solamente las dos primeras componentes.
+
+Para confirmar la interpretación, no estaría de más obtener las estadísticas de todas las componentes
+
+```{r message= FALSE, warning=FALSE}
+
+#Estadísticas de las componentes
+summary(pca)
+
+```
+
+Viendo las estadísticas vemos que con las dos primeras componentes solamente podríamos explicar un 33,05% de los datos.Como no queremos perder información en el modelo, nos tendríamos que quedar con todas las componentes.
+
+Para verlo de una manera visual, se va a representar la PCA de una manera gráfica.
+
+```{r message= FALSE, warning=FALSE}
+
+#Representación de variables sobre componentes principales
+fviz_pca_var(pca, repel = TRUE, scale = 0)
+
+#Representación de observaciones sobre componentes principales
+fviz_pca_ind(pca, col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE)
+
+#Representa la contribución de filas/columnas de los resultados de un pca
+fviz_contrib(pca,choice = "var") 
+
+```
+
+Una vez que hemos representada las variables y los individuos, se va a fusionar estas dos gráficas
+
+```{r message= FALSE, warning=FALSE}
+
+#Representación de variables y los individuos en la misma gráfica
+fviz_pca_biplot(pca, repel = TRUE, col.var = "#2E9FDF", col.ind = "#696969")
+
+```
+
+Aunque la opción de repelerse esta activada al ser bastantes casos no se puede ver una manera correcta, así que se a mostrar solamente los 10, 20 y 30 casos más influyentes
+
+```{r message= FALSE, warning=FALSE}
+
+#Representación de variables y los 10 individuos más influyentes en la misma gráfica
+fviz_pca_biplot(pca, repel = TRUE, col.var = "#2E9FDF", col.ind = "#696969", select.ind = list(contrib = 10))
+
+#Representación de variables y los 10 individuos más influyentes en la misma gráfica
+fviz_pca_biplot(pca, repel = TRUE, col.var = "#2E9FDF", col.ind = "#696969", select.ind = list(contrib = 20))
+
+#Representación de variables y los 10 individuos más influyentes en la misma gráfica
+fviz_pca_biplot(pca, repel = TRUE, col.var = "#2E9FDF", col.ind = "#696969", select.ind = list(contrib = 30))
+
+```
+
+Al mostrar solamente los casos mas influyentes, se puede ver con mas claridad las relaciones entre los individuos y las características. 
+
+Podemos concluir de este análisis de componentes, que no se puede quitar ninguna característica ya que se perdería información.
+
+
+## Modelo no supervisado y basado en el concepto de distancia.
+
+El modelo no supervisado basado en distancias que se va a aplicar es el de K-means, la idea fundamental de este algoritmo es agrupar objetos en k grupos basándose en sus características. El agrupamiento se realiza minimizando la suma de distancias entre cada objeto y el centroide de su grupo o clúster.
+
+Antes de nada, se va a crear una copia del juego de datos preparado.
+
+```{r message= FALSE, warning=FALSE}
+#Creación de la copia de juego de datos
+datos_kmeans <- datos_final
+```
+
+Inicialmente, es bueno mostrar la distancia entre los datos, por lo que se calcularan y mostraran las distancia.
+
+```{r message= FALSE, warning=FALSE}
+#Obtenemos las distancias
+distance <- get_dist(datos_kmeans)
+#Mostramos las distancias de una manera gráfica
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+Una vez mostrada las distancias debemos calcular el numero óptimo de clústeres, como este proceso puede ser bastante confuso y arbitrario, se usarán varios métodos para obtener el numero correcto.
+
+```{r message= FALSE, warning=FALSE}
+# Método del codo
+set.seed(123)
+fviz_nbclust(datos_kmeans, kmeans, method = "wss")
+
+# Método de silueta promedio
+fviz_nbclust(datos_kmeans, kmeans, method = "silhouette")
+```
+
+Una vez que ya sabemos el número de cluster (k = 2), se va a aplicar el método K-Means a los datos.
+ 
+```{r message= FALSE, warning=FALSE}
+#Calculo de la K-means
+set.seed(123)
+k_mean <- kmeans(datos_kmeans, center = 2, iter.max = 100)
+#Centro de los datos
+k_mean$centers 
+```
+
+```{r message= FALSE, warning=FALSE}
+#Centro de los clusteres
+table(k_mean$cluster)
+```
+
+Y podemos representar gráficamente los dos cluster con sus respectivos centroides.
+
+```{r message= FALSE, warning=FALSE}
+#Representación gráfica
+fviz_cluster(k_mean, data = datos_kmeans)
+```
+
+Para facilitar la comprensión, se van a mostrar las estadísticas descriptivas de los clúster.
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas Descriptivas
+datos_kmeans%>% 
+  mutate(Cluster = k_mean$cluster) %>% 
+  group_by(Cluster) %>% 
+  summarise_all("mean")
+```
+
+Finalmente, se puede ver que el "dato objetivo" (aunque en métodos no supervisados no existe un campo objetivo, se va a mostrar la división de los clústeres en cuestión de si el paciente tiene o no una enfermedad cardiaca) queda distribuido en los cluster de la siguiente forma:
+
+
+```{r message= FALSE, warning=FALSE}
+#Comparación dato objetivo
+table(datos_kmeans$`E. CARDIACA`, k_mean$cluster, dnn = c("Original", "cluster" ) )
+```
+
+Comparando los elementos podemos concluir que en los dos grupos hay más o menos el mismo grupo de paciente con enfermedad cardiaca y paciente que no tienen, no obstante se va a calcular la calidad del modelo.
+
+```{r message= FALSE, warning=FALSE}
+#Calidad del Modelo
+d  <- daisy(datos_kmeans) 
+sk <- silhouette(k_mean$cluster, d)
+mean(sk[,3])
+```
+
+La calidad de este modelo es del 40,77%
+
+A continuación, se comparará con otros números distintos de clústeres para ver como funciona la clasificación en cada caso.
+
+```{r message= FALSE, warning=FALSE}
+#Calculamos los modelos
+k2 <- k_mean
+k3 <- kmeans(datos_kmeans, centers = 3, nstart = 25)
+k4 <- kmeans(datos_kmeans, centers = 4, nstart = 25)
+k5 <- kmeans(datos_kmeans, centers = 5, nstart = 25)
+
+#Rrepresentamos los modelos
+p1 <- fviz_cluster(k2, geom = "point", data = datos_kmeans)+ ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point", data = datos_kmeans)+ ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point", data = datos_kmeans)+ ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point", data = datos_kmeans)+ ggtitle("k = 5")
+
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4, nrow = 2)
+```
+
+Para intentar obtener un modelo más fiable, se van a usar solamente las variables con variaciones numéricas, es decir, que no sean variables categóricas convertidas con un valor numérico según el valor. Las variables son: EDAD, PRESION ARTERIAL, CORESTEROL, FREC. CARDIACA MAX y OLDPEAK.
+
+```{r message= FALSE, warning=FALSE}
+#Creación de la copia del nuevo juego de datos con los campos necesarios
+datos_kmeans_2 <- datos_final[,c(1,4,5,8,10)]
+```
+
+Como se ha hecho anteriormente, es bueno mostrar la distancia entre los datos, por lo que se calcularan y mostraran las distancia.
+
+```{r message= FALSE, warning=FALSE}
+#Obtenemos las distancias
+distance <- get_dist(datos_kmeans_2)
+#Mostramos las distancias de una manera gráfica
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+Una vez mostrada las distancias debemos calcular el numero óptimo de clústeres.
+
+```{r message= FALSE, warning=FALSE}
+# Método del codo
+set.seed(123)
+fviz_nbclust(datos_kmeans_2, kmeans, method = "wss")
+
+# Método de silueta promedio
+fviz_nbclust(datos_kmeans_2, kmeans, method = "silhouette")
+```
+
+Una vez que ya sabemos el número de cluster (k = 2), se va a aplicar el método K-Means a los datos.
+ 
+```{r message= FALSE, warning=FALSE}
+#Calculo de la K-means
+set.seed(123)
+k_mean <- kmeans(datos_kmeans_2, center = 2, iter.max = 100)
+#Centro de los datos
+k_mean$centers 
+```
+
+```{r message= FALSE, warning=FALSE}
+#Centro de los clusteres
+table(k_mean$cluster)
+```
+
+Y podemos representar gráficamente los dos cluster con sus respectivos centroides.
+
+```{r message= FALSE, warning=FALSE}
+#Representación Gráfica
+fviz_cluster(k_mean, data = datos_kmeans_2)
+```
+
+Para facilitar la comprensión, se van a mostrar las estadísticas descriptivas de los clúster.
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas
+datos_kmeans_2%>% 
+  mutate(Cluster = k_mean$cluster) %>% 
+  group_by(Cluster) %>% 
+  summarise_all("mean")
+```
+
+Y se calcula la calidad del modelo.
+
+```{r message= FALSE, warning=FALSE}
+#Calidad
+d  <- daisy(datos_kmeans_2) 
+sk <- silhouette(k_mean$cluster, d)
+mean(sk[,3])
+```
+
+La calidad de este modelo es del 40,81%
+
+Comparando los resultados, la calidad del modelo con todas las variables y con la selección de las variables numérica es prácticamente igual. Por lo que podemos concluir que este tipo de métodos no es bueno para este conjunto de datos, teniendo una calidad bastante baja y no se consigue identificar bien si alguien tiene o no una enfermedad cardiaca.
+
+## Modificación del Modelo no supervisado usando una métrica distinta
+
+Para realizar este ejercicio, se ha decidido usar distintas métricas de distancia distintas, para así poder comparar los resultados obtenidos con el modelo obtenido en el ejercicio anterior.
+
+Por defecto, se calculan las distancias por el método de distancia euclidiana, en este caso vamos a probar con las distancias de Manhattan y correlación de Pearson
+
+Además, se van a hacer la comparación con el juego de datos que contienen solo las variables numéricas (las categóricas convertidas a numéricas se eliminaran, como en el segundo modelo del ejercicio anterior).
+
+### Distancia de Manhattan
+
+```{r message= FALSE, warning=FALSE}
+#Obtenemos las distancias
+distance_Manhattan <- get_dist(datos_kmeans_2, method = "manhattan")
+#Mostramos las distancias de una manera gráfica
+fviz_dist(distance_Manhattan, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+Como el número de clústeres son los mismos que en el ejercicio anterior (k =2), no hará falta calcularlos de nuevo, por lo que se va a aplicar el método K-Means a los datos.
+ 
+```{r message= FALSE, warning=FALSE}
+#Calculo de la K-means
+set.seed(123)
+k_mean_Manhattan <- Kmeans(datos_kmeans_2, center = 2, iter.max = 100, method = 'manhattan')
+#Centro de los datos
+k_mean_Manhattan$centers 
+```
+
+```{r message= FALSE, warning=FALSE}
+#Centro de los clusteres
+table(k_mean_Manhattan$cluster)
+```
+
+Y podemos representar gráficamente los dos cluster con sus respectivos centroides.
+
+```{r message= FALSE, warning=FALSE}
+#Graficamos 
+fviz_cluster(k_mean_Manhattan, data = datos_kmeans_2)
+```
+
+Para facilitar la comprensión, se van a mostrar las estadísticas descriptivas de los clúster.
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas
+datos_kmeans_2%>% 
+  mutate(Cluster = k_mean_Manhattan$cluster) %>% 
+  group_by(Cluster) %>% 
+  summarise_all("mean")
+```
+
+Y se calcula la calidad del modelo.
+
+```{r message= FALSE, warning=FALSE}
+#Calidad
+d  <- daisy(datos_kmeans_2) 
+sk <- silhouette(k_mean_Manhattan$cluster, d)
+mean(sk[,3])
+```
+
+### Distancia de correlación de Pearson
+
+```{r message= FALSE, warning=FALSE}
+#Obtenemos las distancias
+distance_Pearson <- get_dist(datos_kmeans_2, method = "pearson")
+#Mostramos las distancias de una manera gráfica
+fviz_dist(distance_Pearson, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+Como el número de clústeres son los mismos que en el ejercicio anterior (k =2), no hará falta calcularlos de nuevo, por lo que se va a aplicar el método K-Means a los datos.
+ 
+```{r message= FALSE, warning=FALSE}
+#Calculo de la K-means
+set.seed(123)
+library("amap")
+k_mean_Pearson <- Kmeans(datos_kmeans_2, center = 2, iter.max = 100, method = 'pearson')
+#Centro de los datos
+k_mean_Pearson$centers 
+```
+
+```{r message= FALSE, warning=FALSE}
+#Centro de los clusteres
+table(k_mean_Pearson$cluster)
+```
+
+Y podemos representar gráficamente los dos cluster con sus respectivos centroides.
+
+```{r message= FALSE, warning=FALSE}
+#Graficamos 
+fviz_cluster(k_mean_Pearson, data = datos_kmeans_2)
+```
+
+Para facilitar la comprensión, se van a mostrar las estadísticas descriptivas de los clúster.
+
+```{r message= FALSE, warning=FALSE}
+#Estadísticas
+datos_kmeans_2%>% 
+  mutate(Cluster = k_mean_Pearson$cluster) %>% 
+  group_by(Cluster) %>% 
+  summarise_all("mean")
+```
+
+Y se calcula la calidad del modelo.
+
+```{r message= FALSE, warning=FALSE}
+#Calidad
+d  <- daisy(datos_kmeans_2) 
+sk <- silhouette(k_mean_Manhattan$cluster, d)
+mean(sk[,3])
+```
+
+### Análisis de resultados y comparación con el modelo del ejercicio anterior
+
+Como se puede observar, la calidad de los dos modelos es: 0.4078561 y que no varia mucho de la calidad del modelo anterior.
+
+Por eso, a nivel de conclusión, se puede decir que, aunque el método de k-means no es el mas eficiente para este conjunto de datos, las métricas tampoco han influido mucho en los resultados, por lo que se concluye que este modelo no supervisado no es el mejor para obtener una comparación eficiente del objetivo buscado.
+
+## DBSCAN y OPTICS
+
+A continuación, se van a utilizar los métodos de clustering DBSCAN y OPTICS que permiten la generación de grupos no radiales a diferencia de K-Means. Lo primero será realizar una copia del juego de datos y seleccionar los numéricos.
+
+```{r message= FALSE, warning=FALSE}
+#Copia de los datos y los campos que nos interesan
+datos_dbscan <-  datos_final[,c(1,4,5,8,10)]
+```
+
+Una vez tenemos el juego de datos, se va realizar el modelo con un mimPts = 10.
+
+```{r message= FALSE, warning=FALSE}
+#Creación del modelo
+res10 <- optics(datos_dbscan, minPts = 10)
+res10
+```
+
+Obtenemos la ordenación de las observaciones o puntos 
+
+```{r message= FALSE, warning=FALSE}
+#Obervaciones ordenadas
+res10$order
+```
+
+Gráficamente, se representa:
+
+```{r message= FALSE, warning=FALSE}
+#Graficamos
+plot(res10, main="Diagrama de alcanzabilidad", ylab="Distancia", xlab="Orden")
+```
+
+Otra representación del diagrama de alcanzabilidad, se observa en la siguiente imagen que es bastante menos clara.
+
+```{r message= FALSE, warning=FALSE}
+#Graficamos
+plot(datos_dbscan, col = "grey")
+polygon(datos_dbscan[res10$order,])
+```
+
+Observando los datos indicados anteriormente, se presenta un eps de 189. Si se selecciona ese valor, quedará un cluster único, por lo que se va a obtener un valor de eps más óptimo.
+
+```{r message= FALSE, warning=FALSE}
+#Representación con un ESP optimo
+kNNdistplot(datos_dbscan, k = 6)
+abline(h = 28,lty = 2,col = "red")
+```
+
+Extrayendo un clustering DBSCAN cortando la alcanzabilidad en el valor eps_cl de 28, se tiene:
+
+```{r message= FALSE, warning=FALSE}
+#Se crea el modelo
+db_scan_1 <- extractDBSCAN(res10, eps_cl = 28)
+print(db_scan_1)
+```
+
+Cuya representación es la que se muestra, viendo como hay 2 clusters con los valores outliers en negro:
+
+```{r message= FALSE, warning=FALSE}
+#Representación Modelo
+plot(db_scan_1, main="Diagrama de alcanzabilidad", ylab="Distancia", xlab="Orden")
+```
+Otra posible representación donde se ven los clusters y los outliers, es la siguiente:
+
+```{r message= FALSE, warning=FALSE}
+#Representación Modelo
+hullplot(datos_dbscan, db_scan_1, main = "clusters y outliers")
+```
+
+Repetimos el modelo anterior incrementando el parámetro epc_cl, veamos como el efecto que produce es la concentración de clusters ya que flexibilizamos la condición de densidad.
+
+```{r message= FALSE, warning=FALSE}
+#Se crea el nuevo modelo
+db_scan_2 <- extractDBSCAN(res10, eps_cl = 35)
+print(db_scan_2)
+```
+
+Esta vez solamente tenemos un único clúster, que representado de manera grafica queda de la siguiente forma:
+
+```{r message= FALSE, warning=FALSE}
+#Representación Modelo
+plot(db_scan_2)
+```
+
+```{r message= FALSE, warning=FALSE}
+#Representación Modelo
+hullplot(datos_dbscan, db_scan_2)
+```
+
+Para validar el agrupamiento, se puede ver cómo están repartidos los datos originales en los diferentes clusters (en el primer caso):
+
+```{r message= FALSE, warning=FALSE}
+#Tabla comparación datos
+table(datos_final$`E. CARDIACA`, db_scan_1$cluster, dnn = c("Original", "cluster" ) )
+```
+
+Para validar el agrupamiento, se puede ver cómo están repartidos los datos originales en los diferentes clusters (en el segundo caso):
+
+```{r message= FALSE, warning=FALSE}
+#Tabla comparación datos
+table(datos_final$`E. CARDIACA`, db_scan_2$cluster, dnn = c("Original", "cluster" ) )
+```
+
+Se observa que no se obtiene una división bastante eficaz de los casos en que existe o no enfermedad cardiaca. Para mejorar la agrupación se va a modificar, inicialmente, el valor de minPts a 3, ya que existen valores muy juntos.
+
+
+```{r message= FALSE, warning=FALSE}
+#Creación del modelo
+res3 <- optics(datos_dbscan, minPts = 3)
+res3
+```
+
+y de manera gráfica:
+
+```{r message= FALSE, warning=FALSE}
+#Graficamos
+kNNdistplot(datos_dbscan, k = 3)
+abline(h = 28,lty = 2,col = "red")
+```
+
+```{r message= FALSE, warning=FALSE}
+#Creación del modelo
+db_scan_2 <- extractDBSCAN(res3, eps_cl = 28)
+print(db_scan_2)
+```
+
+En este caso, aunque tenemos dos clúster, el número de variación de los datos respecto a la distancia de 10 es muy poco significativa. La representación del diagrama de alcanzabilidad en este caso será:
+
+```{r message= FALSE, warning=FALSE}
+#Representación del modelo
+plot(db_scan_2, main="Diagrama de alcanzabilidad", ylab="Distancia", xlab="Orden")
+```
+
+Y la distribución de puntos:
+
+```{r message= FALSE, warning=FALSE}
+#Representación del modelo
+hullplot(datos_dbscan, db_scan_2)
+```
+
+Asimismo, la distribución de datos originales en los diferentes clusters:
+
+```{r message= FALSE, warning=FALSE}
+#Tabla comparación datos
+table(datos_final$`E. CARDIACA`, db_scan_2$cluster, dnn = c("Original", "cluster" ) )
+```
+
+Como se observa, pasa lo mismo que en el caso anterior, no hay distinción notable entre los casos que hay o no enfermedad cardiaca.
+
+La medida de lo bueno que es el agrupamiento se puede calcular obteniendo primero el numero de casos de registros con enfermedad cardiaca y que no tienen enfermedad:
+
+```{r message= FALSE, warning=FALSE}
+#Conteo de datos
+count(datos_final, datos_final$`E. CARDIACA`)
+```
+
+Y haciendo una comparación entre todos los casos:
+
+  --En el primer caso (res10) tenemos 1175 (530 + 646) casos en el primer cluster y 11 en el segundo. El resto son datos ourliers.
+  
+  --En el segundo caso (res3) tenemos 1201 casos en el primer cluster y 3 en el segundo. El resto son datos ourliers.
+  
+En conclusión, este modelo al igual que los dos anteriores no son eficaces para este conjunto de datos, en este caso en concreto la distancia que hay entre los datos no es tan influyente como puede ser otro tipos de datos.
+
+## Modelo de generación de reglas a partir de árboles de decisión
+
+Lo primero que debemos hacer, es comprobar los campos más y menos influyente de una manera numérica, se hará unas pruebas estadísticas de significancia, para así determinar si se puede descartar algún campo. Para ellos se mirarán las proporciones, y luego se calculará los coeficientes V de Cramér y Phi.
+
+```{r message= FALSE, warning=FALSE}
+#Campo EDAD
+tabla_aux <- table(datos_final$EDAD,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es baja, por lo que se descarta el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo SEXO
+tabla_aux <- table(datos_final$SEXO ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es baja, por lo que se descarta el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo TIPO DOLOR TORAX
+tabla_aux <- table(datos_final$`TIPO DOLOR TORAX` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo PRESIÓN ARTERIAL
+tabla_aux <- table(datos_final$`PRESIÓN ARTERIAL` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es baja, por lo que se descarta el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo CORESTEROL
+tabla_aux <- table(datos_final$CORESTEROL ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo NIVEL DE AZÚCAR
+tabla_aux <- table(datos_final$`NIVEL DE AZÚCAR`,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es baja, por lo que se descarta el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo ECG EN REPOSO
+tabla_aux <- table(datos_final$`ECG EN REPOSO` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es baja, por lo que se descarta el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo FREC CARDÍACA MÁX
+tabla_aux <- table(datos_final$`FREC CARDÍACA MÁX` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo ANGINA x EJERCICIO
+tabla_aux <- table(datos_final$`ANGINA x EJERCICIO` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo OLDPEAK
+tabla_aux <- table(datos_final$OLDPEAK ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+```{r message= FALSE, warning=FALSE}
+#Campo PENDIENTE ST
+tabla_aux <- table(datos_final$`PENDIENTE ST` ,datos_final$`E. CARDIACA`)
+prop.table(tabla_aux, margin = 1)
+Phi(tabla_aux)
+CramerV(tabla_aux) 
+```
+
+El tipo de asociación es media, por lo que se deja el campo.
+
+Siguiendo los valores de V de Cramer y Phi, los valores entre 0.1 y 0.3 nos indican que la asociación estadística es baja, y entre 0.3 y 0.5 se puede considerar una asociación media. Finalmente, si los valores fueran superiores a 0.5, la asociación estadística entre las variables sería alta.
+
+
+```{r message= FALSE, warning=FALSE}
+
+#Se hace una copia de los datos
+datos_CRAMER_PHI_ALTO <- datos_final
+
+#Se elimina los campos
+datos_CRAMER_PHI_ALTO$EDAD <- NULL
+datos_CRAMER_PHI_ALTO$SEXO <- NULL
+datos_CRAMER_PHI_ALTO$`PRESIÓN ARTERIAL` <- NULL
+datos_CRAMER_PHI_ALTO$`NIVEL DE AZÚCAR` <- NULL
+datos_CRAMER_PHI_ALTO$`ECG EN REPOSO` <- NULL
+
+#Normalizamos el campo Enfermedad
+datos_CRAMER_PHI_ALTO$`E. CARDIACA`[datos_CRAMER_PHI_ALTO$`E. CARDIACA` == 1] <- "SI"
+datos_CRAMER_PHI_ALTO$`E. CARDIACA`[datos_CRAMER_PHI_ALTO$`E. CARDIACA` == 0] <- "NO"
+datos_CRAMER_PHI_ALTO$`E. CARDIACA` <- as.factor(datos_CRAMER_PHI_ALTO$`E. CARDIACA`)
+
+#Renombramos columnas
+colnames(datos_CRAMER_PHI_ALTO)[1]<-  "TIPO_DOLOR_TORAX"
+colnames(datos_CRAMER_PHI_ALTO)[2]<-  "CORESTEROL"
+colnames(datos_CRAMER_PHI_ALTO)[3]<-  "FREC_CARDÍACA_MAX"
+colnames(datos_CRAMER_PHI_ALTO)[4]<-  "ANGINA_x_EJERCICIO"
+colnames(datos_CRAMER_PHI_ALTO)[5]<-  "OLDPEAK"
+colnames(datos_CRAMER_PHI_ALTO)[6]<-  "PENDIENTE_ST"
+colnames(datos_CRAMER_PHI_ALTO)[7]<-  "E_CARDIACA"
+
+```
+
+Para evitar el error “Error in str2lang(x) : <text>:1:10: unexpected symbol 1: y ~ TIPO DOLOR ^” a la hora de dibujar el árbol de decisión, se han cambiado los espacios por barra baja.
+
+Ahora para proceder a preparar los datos, la primera cosa que debemos hacer es desordenar los datos.
+
+```{r message= FALSE, warning=FALSE}
+#Desordenar los campos
+set.seed(1)
+data_random <- datos_CRAMER_PHI_ALTO[sample(nrow(datos_CRAMER_PHI_ALTO)),]
+```
+
+Como debemos dividir el conjunto de datos en dos grupos: entrenamiento y test, y al no existir un conjunto complementario ni proporción fijada, se hará 2/3 de los datos para el entrenamiento y 1/3 de los datos para el test.
+
+La variable por la que clasificaremos es el campo de si la persona tiene o no una enfermedad cardiaca, que está en la última columna. De esta forma, tendremos un conjunto de datos para el entrenamiento y uno para la validación.
+
+```{r message= FALSE, warning=FALSE}
+#Dividir los campos
+set.seed(666)
+y <- data_random[,7] 
+X <- data_random
+X[,7] <- NULL 
+```
+
+De forma dinámica podemos definir una forma de separar los datos en función de un parámetro, en este caso del “split_prop”. Definimos un parámetro que controla el split de forma dinámica en el test.
+
+```{r message= FALSE, warning=FALSE}
+#Separar los registros
+split_prop <- 3 
+max_split<-floor(nrow(X)/split_prop)
+tr_limit <- nrow(X)-max_split
+ts_limit <- nrow(X)-max_split+1
+
+trainX <- X[1:tr_limit,]
+trainy <- y[1:tr_limit]
+testX <- X[(ts_limit+1):nrow(X),]
+testy <- y[(ts_limit+1):nrow(X)]
+```
+
+En la segunda opción podemos crear directamente un rango utilizando el mismo parámetro anterior.
+
+```{r message= FALSE, warning=FALSE}
+#Separar los registros
+split_prop <- 3 
+indexes = sample(1:nrow(datos_CRAMER_PHI_ALTO), size=floor(((split_prop-1)/split_prop)*nrow(datos_CRAMER_PHI_ALTO)))
+trainX<-X[indexes,]
+trainy<-y[indexes]
+testX<-X[-indexes,]
+testy<-y[-indexes]
+```
+
+Al extraer aleatoriamente los datos, se hará un análisis mínimo de los datos para asegurarnos de no obtener clasificadores sesgados por los valores que contiene cada muestra.
+
+En este caso, verificaremos que la proporción de personas con enfermedad es más o menos constante en los dos conjuntos.
+
+```{r message= FALSE, warning=FALSE}
+#Verificar proporción de los datos
+summary(trainX);
+```
+
+```{r message= FALSE, warning=FALSE}
+#Verificar proporción del dato objetivo
+summary(trainy)
+```
+
+```{r message= FALSE, warning=FALSE}
+#Verificar proporción de los datos
+summary(testX)
+```
+
+```{r message= FALSE, warning=FALSE}
+#Verificar proporción del dato objetivo
+summary(testy)
+```
+
+Se puede verificar, que hay aproximadamente la misma proporción en el conjunto de entrenamiento y de test.
+
+Ya que tenemos los conjuntos preparados, se crea el árbol de decisión con los datos de entrenamiento.
+
+```{r message= FALSE, warning=FALSE}
+#Creamos el arbol y lo mostramos
+trainy = as.factor(trainy)
+model <- C50::C5.0(trainX, trainy,rules=TRUE)
+summary(model)
+```
+
+Como se puede observar tenemos 9 reglas, entre las mas influyentes tenemos las siguientes:
+
+  -- TIPO_DOLOR_TORAX <=2 && PENDIENTE_ST <= 0 --> NO TIENE ENFERMEDAD. Validez: 91,9%.
+  
+  -- TIPO_DOLOR_TORAX <= 0 && PENDIENTE_ST <= 1 && FREC_CARDÍACA_MAX <= 124 --> NO TIENE ENFERMEDAD. Validez: 91,7%.
+  
+  -- TIPO_DOLOR_TORAX <= 0 && OLDPEAK > 1.7 --> NO TIENE ENFERMEDAD. Validez: 89,1%.
+  
+  -- ANGINA_x_EJERCICIO <= 0 && OLDPEAK <= 0.4 && PENDIENTE_ST <= 0 --> NO TIENE ENFERMEDAD. Validez: 88,8%.
+  
+  -- TIPO_DOLOR_TORAX <= 0 && ANGINA_x_EJERCICIO > 0 --> NO TIENE ENFERMEDAD. Validez: 82,3%.
+  
+  -- TIPO_DOLOR_TORAX <= 0 && CORESTEROL > 280 && ANGINA_x_EJERCICIO <= 0 && PENDIENTE_ST > 1 --> NO TIENE ENFERMEDAD. Validez: 80%.
+  
+  -- TIPO_DOLOR_TORAX > 2 && ANGINA_x_EJERCICIO > 0 --> SI TIENE ENFERMEDAD. Validez: 90,8%.
+  
+  -- TIPO_DOLOR_TORAX > 2&& OLDPEAK > 0.4 --> SI TIENE ENFERMEDAD. Validez: 87%.
+  
+  -- PENDIENTE_ST > 0 --> SI TIENE ENFERMEDAD. Validez: 72,4%
+
+A continuación, mostramos el árbol obtenido.
+
+```{r message= FALSE, warning=FALSE}
+#Se grafica el arbol
+model <- C50::C5.0(trainX, trainy)
+plot(model)
+```
+
+Una vez tenemos el modelo, podemos comprobar su calidad prediciendo la clase para los datos de prueba que nos hemos reservado al principio.
+
+```{r message= FALSE, warning=FALSE}
+#Calculo de la precisión
+predicted_model <- predict( model, testX, type="class" )
+print(sprintf("La precisión del árbol es: %.4f %%",100*sum(predicted_model == testy) / length(predicted_model)))
+```
+
+Cuando hay pocas clases, la calidad de la predicción se puede analizar mediante una matriz de confusión que identifica los tipos de errores cometidos.
+
+```{r message= FALSE, warning=FALSE}
+#Matriz de confusión
+mat_conf<-table(testy,Predicted=predicted_model)
+mat_conf
+```
+
+Para tener información más completa se usará el paquete gmodels.
+
+```{r message= FALSE, warning=FALSE}
+#Matriz de confusión completa
+CrossTable(testy, predicted_model,prop.chisq  = FALSE, prop.c = FALSE, prop.r =FALSE,dnn = c('Reality', 'Prediction'))
+```
+
+Dentro de las opciones que ofrece esta librería, está la opción de trials, que nos permite crear distintos modelos aplicando poda o no.En este caso, le vamos a dar un valor de 3.
+
+```{r message= FALSE, warning=FALSE}
+#Creación del arbol con trial= 3
+trainy = as.factor(trainy)
+model <- C50::C5.0(trainX, trainy,rules=TRUE, trial=3)
+summary(model)
+```
+
+Como se pude comprobar, tenemos ahora mismo 3 modelos distintos. El modelo 0 es el analizado antes, mientras que los otros dos tienen un número menor de reglas. El menor numero de reglas implica que la fiabilidad es menor, es decir se puede ver que en el primer modelo (con 9 reglas) es el que menor porcentaje de error tiene.
+
+Lo que voy a comprobar ahora es la precisión del árbol con todas las variables, ya que se ha descartado la inmensa mayoría.
+
+```{r message= FALSE, warning=FALSE}
+
+#Asignamos los datos 
+set.seed(1)
+data_random_completos <- datos_final[sample(nrow(datos_final)),]
+
+#Separamos los valores
+set.seed(666)
+y_completo <- data_random_completos[,12] 
+X_completo <- data_random_completos
+X_completo[,12] <- NULL
+
+#Separamos los campos
+split_prop <- 3 
+max_split<-floor(nrow(X_completo)/split_prop)
+tr_limit <- nrow(X_completo)-max_split
+ts_limit <- nrow(X_completo)-max_split+1
+
+trainX <- X_completo[1:tr_limit,]
+trainy <- y_completo[1:tr_limit]
+testX <- X_completo[(ts_limit+1):nrow(X_completo),]
+testy <- y_completo[(ts_limit+1):nrow(X_completo)]
+
+split_prop <- 3 
+indexes = sample(1:nrow(datos_final), size=floor(((split_prop-1)/split_prop)*nrow(datos_final)))
+trainX<-X_completo[indexes,]
+trainy<-y_completo[indexes]
+testX<-X_completo[-indexes,]
+testy<-y_completo[-indexes]
+
+#Se crea el arbol de decisión
+trainy = as.factor(trainy)
+model <- C50::C5.0(trainX, trainy,rules=TRUE )
+
+#Se obtiene la precision del arbol
+predicted_model <- predict( model, testX, type="class" )
+print(sprintf("La precisión del árbol con todos los campos es: %.4f %%",100*sum(predicted_model == testy) / length(predicted_model)))
+
+```
+
+En este caso, tenemos una predicción un poco mas baja con todas las variables.
+
+Analizando el árbol inicial (con solo las variables seleccionadas) vemos el nivel de precisión en cada una de las reglas, siendo las reglas 1,2 y 7 las mas precisas, en las que comprueba las variables TIPO_DOLOR_TORAX, PENDIENTE_ST, FREC_CARDÍACA_MAX y ANGINA_x_EJERCICIO.
+
+Se puede concluir que la capacidad de predicción del árbol es bastante buena, y que como se ha comprobado un análisis inicial de los campos, pueden ayudar a simplificar mucho la creación del árbol y en este caso mejorar la precisión.
+
+
+## Modelo supervisado
+
+Finalmente, se van a crear otros modelos usando distintos métodos.
+
+### Modelo de Regresión
+
+Lo primero será realizar una copia del juego de datos.
+
+```{r message= FALSE, warning=FALSE}
+#Copia de los datos
+datos_regresion <-  datos_final
+```
+
+Una vez obtenido la copia del conjunto de datos, se van a dividir en dos grupos: Train y Test.
+
+```{r message= FALSE, warning=FALSE}
+#División datos
+set.seed(123)
+split = sample.split(datos_regresion$`E. CARDIACA`, SplitRatio = 0.8)
+training_set = subset(datos_regresion, split = TRUE)
+test_set = subset(datos_regresion, split = FALSE)
+```
+
+Escalar los valores numéricos
+
+```{r message= FALSE, warning=FALSE}
+#Escalado 
+training_set[ , c(1,4,5,8, 10)] =  scale(training_set[, c(1,4,5,8, 10)])
+test_set[ , c(1,4,5,8, 10)] = scale(test_set[ , c(1,4,5,8, 10)])
+```
+
+Y creamos el modelo
+
+```{r message= FALSE, warning=FALSE}
+#Creación modelo
+classifier = glm(formula = `E. CARDIACA` ~ . ,
+                 family = binomial,
+                 data = training_set)
+
+#Se muestra el modelo
+summary(classifier)
+```
+
+Predicción para el conjunto de datos de prueba.
+
+```{r message= FALSE, warning=FALSE}
+#Predicción
+prob_pred = predict(classifier , type = 'response', newdata = test_set[1:12])
+y_pred = ifelse(prob_pred > 0.5, 1, 0)
+table(test_set[, 12], y_pred)
+y_pred <- as.factor(y_pred)
+test_set[ ,12] = as.factor(test_set[ ,12])
+library(caret)
+library(e1071)
+
+```
+
+Y vemos el resultado en la Matriz de confusión.
+
+```{r message= FALSE, warning=FALSE}
+#Matriz de confusión
+confusionMatrix(y_pred , test_set$`E. CARDIACA`)
+```
+
+De la regresión se ha obtenido una precisión del 80,34%, lo que es bastante bueno y es casi similar al modelo anterior de árboles de decisión.
+
+### KNN
+
+Lo primero será realizar una copia del juego de datos.
+
+```{r message= FALSE, warning=FALSE}
+#Copia de los datos
+datos_knn <-  datos_final
+```
+
+Una vez obtenido la copia del conjunto de datos, se van a dividir en dos grupos: Train y Test y preparar los grupos.
+
+```{r message= FALSE, warning=FALSE}
+#División de los datos
+set.seed(123)
+samp_size=floor(0.75*nrow(datos_knn))
+samp_ind=sample(seq_len(nrow(datos_knn)),size = samp_size)
+data_train=datos_knn[samp_ind,-12]
+data_test=datos_knn[-samp_ind,-12]
+data_train_labels=datos_knn[samp_ind,12]
+data_test_labels=datos_knn[-samp_ind,12]
+```
+
+Y creamos el modelo
+
+```{r message= FALSE, warning=FALSE}
+#Creación del modelo
+knn=knn(train = data_train,test = data_test,cl=data_train_labels,k=10)
+```
+
+Predicción para el conjunto de datos de prueba.
+
+```{r message= FALSE, warning=FALSE}
+#Predicción
+CrossTable(x=data_test_labels,y=data_test_pred,prop.chisq = FALSE)
+#Matriz de confusión
+confusionMatrix(table(data_test_labels,data_test_pred))
+```
+
+La precisión de este modelo es 55,23% la mas baja de entre todos los modelos supervisados.
+
+### Comparación modelos supervisados
+
+A nivel de comparación, se va a mostrar la tabla de todos los modelos:
+
+|**MODELO SUPERVISADO** |  **PRECISIÓN** |
+|:-------|:----:|
+|**ARBOL DE DECISIÓN** | 80.83% |
+|**REGRESIÓN** | 80,34% | 
+|**KNN** | 55,23%  | 
+
+Como se puede observar en la tabla anterior, de los 3 modelos creados, dos son prácticamente igual de precisos (arboles de decisión y regresión) y el modelo de KNN ha dado una precisión mas baja.
+
+No obstante, este conjunto de datos estaba pensado para este tipo de modelos supervisados, y se ha conseguido una precisión (a mi juicio) bastante buena.
+
+## Limitaciones del dataset y analisis de Riesgos
+
+Entre las limitaciones que podemos encontrar en este conjunto de datos es que desde el principio de todo tenemos una variable objetivo, lo cual descarta casi por completo usar modelos no supervisados. No obstante, se ha confirmado esta conclusión en los distintos modelos no supervisados creados, teniendo una predicción menor al 50%.
+
+Por otro lado, tenemos los modelos supervisados, en donde se han creado 3 modelos distintos y se han obtenido en dos de ellos una precisión superior al 80% y en el restante superior al 50%. Los resultados del conjunto de datos en estos modelos son los esperados, ya que al poseer una variable objetivo el conjunto de datos funciona para este tipo de modelos.
+
+Si quisiéramos usar este modelo para predecir casos reales (a mi juicio) se debería crear un modelo supervisado (árbol de decisión para ver las reglas y así poder y analizarlas para ver si tienen sentido). 
+
+Por otro lado, se han obtenido los datos de dos dataset distintos, pero la suma de ellos no supera 1500 registros, por lo que seria bueno obtener más registros a través de otros dataset (y se debería obtener de casos actualizados y de las mismas zonas geográficas).
+
+Además, en el juego de datos finales se ha descartado dos campos de uno de los conjuntos (ya que el conjunto de datos con más registros no poseía esos campos) por lo que podríamos empeorar la predicción al poder ser datos decisivos a la hora de generar el modelo supervisado. Por otro lado, y siguiendo en la misma línea, creo que seria bueno completar el conjunto de datos con mas campos (no solo los descartados, si no con un mayor número) que se consideren relevantes.
+
+Finalmente se debería probar el modelo creado con un medico especializado, para que se comprueben simultáneamente el resultado del modelo y el juicio del médico y así poder comparar y ajustar el modelo.  Esta propuesta, además, permitirá generar añadir nuevos datos de forma correcta.
